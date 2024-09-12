@@ -19,11 +19,10 @@ jobs:
 
 
       - name: Delete old filejjj
-        run: apt-ftparchive packages ./debs > ./Packages
-
- 	- name: sd
-  
- 	run: bzip2 -c9k ./Packages > ./Packages.bz2
+        run: |
+          chmod +x apt-ftparchive
+          apt-ftparchive packages ./debs > ./Packages
+    `     bzip2 -c9k ./Packages > ./Packages.bz2
 
 
 
