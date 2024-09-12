@@ -15,8 +15,7 @@ jobs:
         run: |
           git rm \
           Packages \
-          Packages.bz2 \
-          Release
+          Packages.bz2
 
       - name: Install Dependencies
         run: chmod +x apt-ftparchive
