@@ -13,7 +13,8 @@ jobs:
 
       - name: Check Dependencies
         run: |
-          if [ -f "./apt-ftparchive" ]; then else echo "Dependencies apt-ftparchive ... PLEASE!!!"
+          if [ -f "./apt-ftparchive" ]; then 
+          else echo "Dependencies apt-ftparchive ... PLEASE!!!"
           fi
 
 
