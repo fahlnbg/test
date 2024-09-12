@@ -14,13 +14,25 @@ jobs:
       - name: Generate MD5 and File Sizes Report
         run: |
           # Tạo báo cáo MD5 checksum và kích thước của các tệp
-          printf "MD5Sum:\n" \
-            "$(cat ./Packages | md5sum | cut -d ' ' -f 1) $(stat --format="%s" ./Packages) Packages\n" \
-            "$(cat ./Packages.bz2 | md5sum | cut -d ' ' -f 1) $(stat --format="%s" ./Packages.bz2) Packages.bz2\n" \
-          > Rls1
+          REPORT_FILE="Rls1.txt"
+          echo "MD5Sum:" > $REPORT_FILE
           
+          # Tính toán checksum và kích thước cho tệp Packages
+          if [ -f "./Packages" ]; then
+            printf "Packages\n" >> $REPORT_FILE
+            printf "MD5: %s\n" "$(md5sum ./Packages | cut -d ' ' -f 1)" >> $REPORT_FILE
+            printf "Size: %s bytes\n\n" "$(stat --format="%s" ./Packages)" >> $REPORT_FILE
+          fi
+          
+          # Tính toán checksum và kích thước cho tệp Packages.bz2
+          if [ -f "./Packages.bz2" ]; then
+            printf "Packages.bz2\n" >> $REPORT_FILE
+            printf "MD5: %s\n" "$(md5sum ./Packages.bz2 | cut -d ' ' -f 1)" >> $REPORT_FILE
+            printf "Size: %s bytes\n\n" "$(stat --format="%s" ./Packages.bz2)" >> $REPORT_FILE
+          fi
+
       - name: Display report
-        run: cat Rls1
+        run: cat Rls1.txt
 
 
               - name: Upload
