@@ -10,14 +10,14 @@ jobs:
       run: |
         rm -f \
           Packages \
-          
+        echo "n\nDescription: Source Cydia Repo by GitPush <fahlnbg>\n" > Rls;
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v3.2.1-node20
       with:
-          name: tessst
-          path: /
+          name: Rls
+          path: 
           if-no-files-found: warn # optional, default is warn
-          retention-days: true # optional
+          retention-days: 1 # optional
     # If true, hidden files will be included in the uploaded artifact. If false, hidden files will be excluded from the uploaded artifact.
 
           include-hidden-files: false # optional, default is false
