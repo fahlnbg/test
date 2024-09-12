@@ -41,8 +41,8 @@ jobs:
             "$(cat ./Packages.bz2 | md5sum | cut -d ' ' -f 1) $(stat --format="%s" ./Packages.bz2) Packages.bz2\n" \
           > Rls1
           
-      - name: Display report
-        run: cat Rls1
+      - name: Display 
+        run: cat Rls1 Psl > Release
         
 
 
