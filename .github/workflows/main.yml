@@ -21,3 +21,13 @@ jobs:
           
       - name: Display report
         run: cat Rls1
+
+
+              - name: Upload
+        run: |
+          git add --all
+          git config --global user.name 'FAHLNBG'
+          git config --global user.email 'fahlnbg@gmail.com'
+          git commit -m "Push Repo"
+          git push origin main
+
