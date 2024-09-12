@@ -13,20 +13,21 @@ jobs:
 
       - name: Delete old file
         run: |
-          git rm Packages Packages.bz2 Release  # Đường dẫn đến tệp bạn muốn xóa
+          git rm Packages Packages.bz2 Release
 
-      - name: Creat new file Packages, Packages.bz2, Release
+
+      - name: Delete old file
         run: |
+        apt-ftparchive packages ./debs > ./Packages;    # Creat file Packages
+        bzip2 -c9k ./Packages > ./Packages.bz2;  # Creat file Packages.bz2
+        printf "Origin: GitPush Repo\nLabel: GitPush\nSuite: stable\nVersion: 1.0\nCodename: ios\nArchitectures: iphoneos-arm iphoneos-arm64\nComponents: main\nDescription: Source Cydia Repo by GitPush <fahlnbg>\n" > Rls;
+        printf "MD5Sum:\n "$(cat ./Packages | md5sum | cut -d ' ' -f 1)" "$(stat ./Packages --printf="%s")" Packages\n "$(cat ./Packages.bz2 | md5sum | cut -d ' ' -f 1)" "$(stat ./Packages.bz2 --printf="%s")" Packages.bz2\n" > Rls1;
 
-          	apt-ftparchive packages ./debs > ./Packages;    # Creat file Packages
-          	bzip2 -c9k ./Packages > ./Packages.bz2;  # Creat file Packages.bz2
-            printf "Origin: GitPush Repo\nLabel: GitPush\nSuite: stable\nVersion: 1.0\nCodename: ios\nArchitectures: iphoneos-arm iphoneos-arm64\nComponents: main\nDescription: Source Cydia Repo by GitPush <fahlnbg>\n" > Rls;
-            printf "MD5Sum:\n "$(cat ./Packages | md5sum | cut -d ' ' -f 1)" "$(stat ./Packages --printf="%s")" Packages\n "$(cat ./Packages.bz2 | md5sum | cut -d ' ' -f 1)" "$(stat ./Packages.bz2 --printf="%s")" Packages.bz2\n" > Rls1;
+	     cat Rls Rls1 > Release
 
-	          cat Rls Rls1 > Release;   
 
       - name: Upload
-        run: |
+      run: |
           git add --all
           git config --global user.name 'FAHLNBG'
           git config --global user.email 'fahlnbg@gmail.com'
