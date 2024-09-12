@@ -6,7 +6,7 @@ jobs:
   clean:
     runs-on: macos-12
     permissions:
-      contents: write , read
+      contents: write
     steps:
     - name: Clean secret management files
       run: |
