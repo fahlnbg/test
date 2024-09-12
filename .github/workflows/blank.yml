@@ -1,20 +1,20 @@
-name: Upload File
+name: Delete File
 
 on:
-  push:
-    branches:
-      - main  # Hoặc bất kỳ nhánh nào bạn muốn
+  workflow_dispatch:  # Kích hoạt bằng tay từ giao diện GitHub
 
 jobs:
-  upload:
+  delete:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Upload file
-        uses: actions/upload-artifact@v3
-        with:
-          name: aa
-          path: Packages
+      - name: Delete file
+        run: |
+          git config --global user.name 'GitHub Actions'
+          git config --global user.email 'actions@github.com'
+          git rm Packages  # Đường dẫn đến tệp bạn muốn xóa
+          git commit -m "Delete file"
+          git push origin main
