@@ -1,4 +1,4 @@
-name: Generate MD5 and File Sizes
+name: Generate MD5 and File Sizes Report
 
 on:
   workflow_dispatch: # Cho phép kích hoạt workflow thủ công từ giao diện GitHub
@@ -34,12 +34,12 @@ jobs:
       - name: Display report
         run: cat Rls1.txt
 
-
-              - name: Upload
+      - name: Commit and push report
         run: |
-          git add --all
-          git config --global user.name 'FAHLNBG'
-          git config --global user.email 'fahlnbg@gmail.com'
-          git commit -m "Push Repo"
-          git push origin main
-
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add Rls1.txt
+          git commit -m "Add MD5 and file sizes report"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
