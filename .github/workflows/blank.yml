@@ -1,19 +1,20 @@
+name: Upload File
 
-name: rest
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - main  # Hoặc bất kỳ nhánh nào bạn muốn
+
 jobs:
-  clean:
-    runs-on: macos-12
-    permissions:
-      contents: write
+  upload:
+    runs-on: ubuntu-latest
+
     steps:
-    - name: Clean secret management files
-      run: |
-        rm -f \
-          Packages \
-        echo "n\nDescription: Source Cydia Repo by GitPush <fahlnbg>\n" > Rls;
-      - name: Upload IPA
-        uses: actions/upload-artifact@v4
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Upload file
+        uses: actions/upload-artifact@v3
         with:
-          path: ${{ github.workspace }}/a
+          name: my-file
+          path: /
