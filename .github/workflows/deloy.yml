@@ -1,16 +1,23 @@
-name: Delete File
+name: Complete & Update souce package
 
 on:
-  workflow_dispatch:  # Kích hoạt bằng tay từ giao diện GitHub
+  workflow_dispatch:
 
 jobs:
-  delete:
+  FAHLNBG-with-love:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
+      - name: Check Dependencies
+        run: |
+          if [ -f "./apt-ftparchive" ]; then else echo "Dependencies apt-ftparchive ... PLEASE!!!"
+          fi
+
+
+          
       - name: Delete old file
         run: |
           git rm \
@@ -31,31 +38,11 @@ jobs:
           printf "Origin: FAHLNBG Repo\nLabel: FAHLNBG\nSuite: stable\nVersion: 1.0\nCodename: ios\nArchitectures: iphoneos-arm iphoneos-arm64\nComponents: main\nDescription: Source Repo by github-action <fahlnbg>\n" > Release
 
 
-          
           # Tính toán checksum và kích thước cho tệp Packages
           echo "MD5Sum:" > Release
-          
-          if [ -f "./Packages" ]; then
-            printf "%s\n" "$(md5sum ./Packages | cut -d ' ' -f 1) %s bytes\n\n" "$(stat --format="%s" ./Packages) Package" >> Release
-          fi
-
-        
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-         
+          printf "%s\n" "$(md5sum ./Packages | cut -d ' ' -f 1)" "$(stat --format="%s" ./Packages) Package" >> Release
+          printf "%s\n" "$(md5sum ./Packages.bz2 | cut -d ' ' -f 1)" "$(stat --format="%s" ./Packages.bz2) Package.bz2" >> Release
+               
 
       - name: Upload
         run: |
