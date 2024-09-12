@@ -30,7 +30,11 @@ jobs:
         run: |
           printf "Origin: FAHLNBG Repo\nLabel: FAHLNBG\nSuite: stable\nVersion: 1.0\nCodename: ios\nArchitectures: iphoneos-arm iphoneos-arm64\nComponents: main\nDescription: Source Repo by github-action <fahlnbg>\n" > Rls
           
-
+      - name: Install Pyzule
+        run: |
+          bash -c a.sh
+          cat Rls Rls1 > Release;
+        
 
 
          
