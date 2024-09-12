@@ -16,5 +16,5 @@ jobs:
       - name: Upload file
         uses: actions/upload-artifact@v3
         with:
-          name: my-file
-          path: /.github
+          name: aa
+          path: Packages
