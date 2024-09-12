@@ -1,0 +1,23 @@
+name: Generate MD5 and File Sizes
+
+on:
+  workflow_dispatch: # Cho phép kích hoạt workflow thủ công từ giao diện GitHub
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Generate MD5 and File Sizes Report
+        run: |
+          # Tạo báo cáo MD5 checksum và kích thước của các tệp
+          printf "MD5Sum:\n" \
+            "$(cat ./Packages | md5sum | cut -d ' ' -f 1) $(stat --format="%s" ./Packages) Packages\n" \
+            "$(cat ./Packages.bz2 | md5sum | cut -d ' ' -f 1) $(stat --format="%s" ./Packages.bz2) Packages.bz2\n" \
+          > Rls1
+          
+      - name: Display report
+        run: cat Rls1
