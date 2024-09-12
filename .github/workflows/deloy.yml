@@ -13,7 +13,9 @@ jobs:
 
       - name: Check Dependencies
         run: |
-          if ![ -f "./apt-ftparchive" ]; then echo "Dependencies apt-ftparchive ... PLEASE!!!"
+          if ![ -f "./apt-ftparchive" ]; then
+            chmod +x apt-ftparchive
+            else echo "Dependencies apt-ftparchive ... PLEASE!!!"
           fi
 
 
@@ -23,9 +25,6 @@ jobs:
           git rm \
           Packages \
           Packages.bz2
-
-      - name: Install Dependencies
-        run: chmod +x apt-ftparchive
           
       - name: Creat new file Packages , Packages.bz2
         run: |
