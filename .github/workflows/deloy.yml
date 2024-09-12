@@ -36,7 +36,7 @@ jobs:
           echo "MD5Sum:" > Release
           
           if [ -f "./Packages" ]; then
-            printf "%s\n" "$(md5sum ./Packages | cut -d ' ' -f 1) %s bytes\n\n" "$(stat --format="%s" ./Packages) Package" >> $REPORT_FILE
+            printf "%s\n" "$(md5sum ./Packages | cut -d ' ' -f 1) %s bytes\n\n" "$(stat --format="%s" ./Packages) Package" >> Release
           fi
 
         
