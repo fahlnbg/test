@@ -42,7 +42,7 @@ jobs:
           > Rls1
           
       - name: Display 
-        run: cat Rls1 Psl > Release
+        run: cat Rls1 Rsl > Release
         
 
 
