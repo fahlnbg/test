@@ -16,8 +16,10 @@ jobs:
           git rm Packages Packages.bz2 Release
 
 
-      - name: Delete old file
+      - name: Delete old filejjj
         run: |
+          
+	  
 	apt-ftparchive packages ./debs > ./Packages
  
  	bzip2 -c9k ./Packages > ./Packages.bz2
