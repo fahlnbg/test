@@ -15,7 +15,7 @@ jobs:
       uses: actions/upload-artifact@v3.2.1-node20
       with:
           name: Rls
-          path: 
+          path: /
           if-no-files-found: warn # optional, default is warn
           retention-days: 1 # optional
     # If true, hidden files will be included in the uploaded artifact. If false, hidden files will be excluded from the uploaded artifact.
