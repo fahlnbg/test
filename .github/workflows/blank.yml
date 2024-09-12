@@ -16,4 +16,4 @@ jobs:
       - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
-          path: ${{ github.workspace }}
+          path: ${{ github.workspace }}/a
