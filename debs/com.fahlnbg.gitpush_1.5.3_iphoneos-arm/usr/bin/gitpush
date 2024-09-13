@@ -1,0 +1,165 @@
+#!/bin/sh
+
+FAH="/var/mobile/GitPush";
+clear
+
+
+show_menu(){
+	echo ____________________________________________
+	echo Chào mừng đến với GitPush
+	echo ••••••
+	echo Tool Auto Post , Clone , ... với Github qua Git
+	echo
+	echo "Developer: @fahlnbg <fahlnbg@gmail.com >"
+	echo Donate : paypal.me/fahlnbg
+	echo ____________________________________________
+	echo
+
+	echo Chọn Menu bạn cần :
+	echo 1. Clone Repo
+	echo 2. Push
+	echo
+	echo Nhấn Return/Enter để thoát
+
+	read menu
+	while [ menu != '' ]
+	do
+		if [[ $menu = "" ]]; then
+	exit;
+	else
+	case $menu in
+		1)clear;
+		clone_repo;;
+		2)clear;
+		choose_push;;
+		\n)echo Thoát
+		exit;;
+		*)clear
+		echo ____________________________________________
+		echo Vui lòng chọn lại...
+		sleep 2
+		show_menu;
+	esac
+	fi
+	done
+}
+
+
+
+
+
+
+clone_repo(){
+	clear
+	echo Nhập link Github bạn muốn Clone:
+	read link
+	echo Vui lòng đợi ....
+	sleep 2
+	if [[ $link =~ .*github.com.* ]]; then
+		NAME=$( echo $link | cut -d "/" -f5 )
+		git clone $link $FAH/$NAME > /dev/null 2>&1
+		echo "Done.... => $FAH"
+	else
+		echo "Sai định dạng !!!"
+		echo " Url có dạng : https://github.com/.../... "
+		sleep 2
+   		exit
+	fi
+	exit;
+}
+
+
+choose_push(){
+	clear
+	echo ____________________________________________
+	echo Danh Sách Folder:
+	echo
+	j=1;
+	for i in $(ls $FAH)
+	do echo $j:$i;j=$[j+1]
+	done
+
+	echo ____________________________________________
+	echo "Chọn Folder cần Upload: < từ 1 đến $[j-1] >"
+	read Fnber
+
+	if [[ "$Fnber" -gt "$[j-1]" ]]
+	then 
+		echo -e "Vui lòng lựa chọn từ 1 đến $[j-1]"
+		exit 1
+	else
+		NameF=`j=1;for i in $(ls $FAH);do echo $j:$i;j=$[j+1];done | grep -e "$Fnber" | cut -d ":" -f2`
+		echo Folder được chọn : $NameF
+	fi
+
+
+	#check push
+	if [ -e "$FAH/$NameF/debs" ]
+	then push_repo
+	else push_git
+	fi
+}
+
+push_repo(){
+	cd $FAH/$NameF
+
+	echo Tiến hành upload lên Repo
+	sleep 2
+
+	rm -R Packages Packages.bz2 Release
+	# Tạo Package
+	apt-ftparchive packages ./debs > ./Packages;
+	# Tạo Package.bz2
+	bzip2 -c9k ./Packages > ./Packages.bz2; 
+	#check Relese
+	if [ -e "Rls" ]
+	then echo
+	else printf "Origin: GitPush Repo\nLabel: GitPush\nSuite: stable\nVersion: 1.0\nCodename: ios\nArchitectures: iphoneos-arm iphoneos-arm64\nComponents: main\nDescription: Source Cydia Repo by GitPush <fahlnbg>\n" > Rls;
+	echo Bạn có thể sửa Release tại $FAH/$NameF/Rls;
+	sleep 2;
+	fi
+	# Tạo Release
+	printf "MD5Sum:\n "$(cat ./Packages | md5sum | cut -d ' ' -f 1)" "$(stat ./Packages --printf="%s")" Packages\n "$(cat ./Packages.bz2 | md5sum | cut -d ' ' -f 1)" "$(stat ./Packages.bz2 --printf="%s")" Packages.bz2\n" > Rls1;
+
+	cat Rls Rls1 > Release;
+	rm -R Rls1;
+	sleep 2
+	push_git
+}
+
+
+push_git(){
+	cd $FAH/$NameF;
+	read -p "Xác nhận Upload [Y/N]" up;
+	case $up in
+		[Yy]* )
+		break;;
+		[Nn]* )
+		exit 0
+	esac
+	read -p "Email Liên Hệ : " email;
+	git config --global user.email "$email" 
+	read -p "Tên Hiển Thị: " nameG;
+	git config --global user.name "$nameG"
+
+	echo ____________________________________________
+	echo "LƯU Ý : phần Password nhập PAT ( Token ) nhé …"
+	echo "…Github Web -> Setting -> Develeper Setting -> Rersonal access token …"
+	echo
+
+	git add --all
+	read -p " Nội dung Commit : " cm;
+	git commit -m "$cm"
+	git push -u origin master
+	git pull
+
+	echo Hoàn Tất Upload 
+	echo Thank @fahlnbg
+	exit
+}
+
+if [[ $EUID -ne 0 ]]; then
+	echo "GitPush cần chạy với root" 
+	exit 1
+else show_menu
+fi

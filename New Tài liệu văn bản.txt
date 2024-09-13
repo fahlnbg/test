@@ -1,0 +1,101 @@
+// Check if it's a new day
+- (BOOL)isNewDay {
+    NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+    NSDate *lastDate = [defaults objectForKey:@"LastDate"];
+    NSDate *today = [NSDate date];
+    
+    if (!lastDate) {
+        // No previous date stored, so it's a new day
+        [defaults setObject:today forKey:@"LastDate"];
+        [defaults synchronize];
+        return YES;
+    }
+    
+    NSCalendar *calendar = [NSCalendar currentCalendar];
+    NSDateComponents *lastDateComponents = [calendar components:(NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay) fromDate:lastDate];
+    NSDateComponents *todayComponents = [calendar components:(NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay) fromDate:today];
+    
+    if (lastDateComponents.year != todayComponents.year ||
+        lastDateComponents.month != todayComponents.month ||
+        lastDateComponents.day != todayComponents.day) {
+        // It's a new day
+        [defaults setObject:today forKey:@"LastDate"];
+        [defaults synchronize];
+        return YES;
+    }
+    
+    return NO;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+……………………………
+
+
+
+
+
+
+
+
+
+
+
+
+- (void)viewDidLoad {
+    [super viewDidLoad];
+    
+    // Schedule timer to check for new day
+    [self scheduleDailyCheck];
+}
+
+- (void)scheduleDailyCheck {
+    NSTimer *timer = [NSTimer scheduledTimerWithTimeInterval:[self timeIntervalUntilNextMidnight]
+                                                      target:self
+                                                    selector:@selector(checkForNewDay)
+                                                    userInfo:nil
+                                                     repeats:NO];
+}
+
+- (NSTimeInterval)timeIntervalUntilNextMidnight {
+    NSCalendar *calendar = [NSCalendar currentCalendar];
+    NSDateComponents *components = [calendar components:(NSCalendarUnitYear | NSCalendarUnitMonth | NSCalendarUnitDay | NSCalendarUnitHour | NSCalendarUnitMinute | NSCalendarUnitSecond)
+                                               fromDate:[NSDate date]];
+    [components setHour:0];
+    [components setMinute:0];
+    [components setSecond:0];
+    
+    NSDate *midnight = [calendar dateFromComponents:components];
+    midnight = [midnight dateByAddingTimeInterval:24 * 60 * 60]; // Next midnight
+    
+    return [midnight timeIntervalSinceNow];
+}
+
+- (void)checkForNewDay {
+    if ([self isNewDay]) {
+        [self showPopup];
+    }
+    
+    // Reschedule the timer for the next day
+    [self scheduleDailyCheck];
+}
+
+- (void)showPopup {
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Ngày Mới"
+                                                               message:@"Chúc mừng bạn đã bắt đầu một ngày mới!"
+                                                        preferredStyle:UIAlertControllerStyleAlert];
+    
+    UIAlertAction *okAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil];
+    [alert addAction:okAction];
+    
+    [self presentViewController:alert animated:YES completion:nil];
+}
