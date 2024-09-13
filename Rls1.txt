@@ -1,0 +1,9 @@
+MD5Sum:
+Packages
+MD5: 808b2cfa85e1424c4905545002dfbebc
+Size: 566 bytes
+
+Packages.bz2
+MD5: 7cd4c52eaa19ec2dec0dc4cc9534360f
+Size: 418 bytes
+

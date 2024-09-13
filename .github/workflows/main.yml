@@ -1,0 +1,45 @@
+name: Generate MD5 and File Sizes Report
+
+on:
+  workflow_dispatch: # Cho phép kích hoạt workflow thủ công từ giao diện GitHub
+
+jobs:
+  generate-report:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Generate MD5 and File Sizes Report
+        run: |
+          # Tạo báo cáo MD5 checksum và kích thước của các tệp
+          REPORT_FILE="Rls1.txt"
+          echo "MD5Sum:" > $REPORT_FILE
+          
+          # Tính toán checksum và kích thước cho tệp Packages
+          if [ -f "./Packages" ]; then
+            printf "Packages\n" >> $REPORT_FILE
+            printf "MD5: %s\n" "$(md5sum ./Packages | cut -d ' ' -f 1)" >> $REPORT_FILE
+            printf "Size: %s bytes\n\n" "$(stat --format="%s" ./Packages)" >> $REPORT_FILE
+          fi
+          
+          # Tính toán checksum và kích thước cho tệp Packages.bz2
+          if [ -f "./Packages.bz2" ]; then
+            printf "Packages.bz2\n" >> $REPORT_FILE
+            printf "MD5: %s\n" "$(md5sum ./Packages.bz2 | cut -d ' ' -f 1)" >> $REPORT_FILE
+            printf "Size: %s bytes\n\n" "$(stat --format="%s" ./Packages.bz2)" >> $REPORT_FILE
+          fi
+
+      - name: Display report
+        run: cat Rls1.txt
+
+      - name: Commit and push report
+        run: |
+          git config --global user.name "github-actions"
+          git config --global user.email "github-actions@github.com"
+          git add Rls1.txt
+          git commit -m "Add MD5 and file sizes report"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
