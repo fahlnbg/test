@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kiểm tra kết nối USB CH340 - Web Serial API</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Inter & FontAwesome Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 h-full flex flex-col">
+
+    <header class="bg-slate-800 border-b border-slate-700 px-6 py-4 flex items-center justify-between shadow-md">
+        <div class="flex items-center space-x-3">
+            <div class="bg-blue-600 p-2 rounded-xl text-white shadow-lg shadow-blue-500/30">
+                <i class="fa-solid fa-microchip text-xl"></i>
+            </div>
+            <div>
+                <h1 class="text-lg font-bold tracking-tight">CH340 Serial Monitor & Checker</h1>
+                <p class="text-xs text-slate-400">Giao diện kiểm tra cổng USB CH340 sử dụng Web Serial API</p>
+            </div>
+        </div>
+        <div class="flex items-center space-x-2">
+            <span id="browser-support-badge" class="px-3 py-1 rounded-full text-xs font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                <i class="fa-solid fa-circle-check mr-1"></i> Trình duyệt hỗ trợ
+            </span>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-hidden p-4 md:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-7xl mx-auto w-full">
+        
+        <!-- Cột điều khiển (Bên trái / Trên) -->
+        <div class="lg:col-span-1 flex flex-col space-y-6 overflow-y-auto pr-1">
+            
+            <!-- Thẻ Trạng thái kết nối -->
+            <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 shadow-xl">
+                <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4 flex items-center">
+                    <i class="fa-solid fa-plug text-blue-400 mr-2"></i> Trạng thái kết nối
+                </h2>
+                
+                <div class="flex items-center justify-between mb-4 p-3 bg-slate-900/50 rounded-xl border border-slate-700/50">
+                    <div class="flex items-center space-x-3">
+                        <div id="status-indicator" class="w-3.5 h-3.5 rounded-full bg-rose-500 shadow-lg shadow-rose-500/55 animate-pulse"></div>
+                        <span id="status-text" class="text-sm font-medium text-slate-300">Đã ngắt kết nối</span>
+                    </div>
+                    <span id="device-chip-badge" class="text-xs px-2.5 py-1 rounded-lg bg-slate-700 text-slate-300 font-mono">CH340: Chưa rõ</span>
+                </div>
+
+                <div class="space-y-3">
+                    <button id="btn-connect" onclick="connectSerial()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-medium py-2.5 px-4 rounded-xl transition duration-200 flex items-center justify-center space-x-2 shadow-lg shadow-blue-600/30">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>Chọn & Kết nối Cổng USB</span>
+                    </button>
+                    <button id="btn-disconnect" onclick="disconnectSerial()" disabled class="w-full bg-slate-700 hover:bg-slate-600 text-slate-400 hover:text-white font-medium py-2.5 px-4 rounded-xl transition duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                        <i class="fa-solid fa-power-off"></i>
+                        <span>Ngắt kết nối</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Thẻ Cấu hình Serial -->
+            <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 shadow-xl flex-1">
+                <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4 flex items-center">
+                    <i class="fa-solid fa-sliders text-indigo-400 mr-2"></i> Cấu hình thông số
+                </h2>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1.5">Tốc độ truyền (Baud Rate)</label>
+                        <select id="baud-rate" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500 transition">
+                            <option value="9600">9600</option>
+                            <option value="19200">19200</option>
+                            <option value="38400">38400</option>
+                            <option value="57600">57600</option>
+                            <option value="115200" selected>115200</option>
+                            <option value="230400">230400</option>
+                            <option value="460800">460800</option>
+                            <option value="921600">921600</option>
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1.5">Data Bits</label>
+                            <select id="data-bits" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+                                <option value="8" selected>8</option>
+                                <option value="7">7</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1.5">Stop Bits</label>
+                            <select id="stop-bits" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+                                <option value="1" selected>1</option>
+                                <option value="2">2</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1.5">Parity</label>
+                        <select id="parity" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-blue-500">
+                            <option value="none" selected>None</option>
+                            <option value="even">Even</option>
+                            <option value="odd">Odd</option>
+                        </select>
+                    </div>
+
+                    <div class="pt-2 border-t border-slate-700/50">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-medium text-slate-400">Thông tin phần cứng chip:</span>
+                        </div>
+                        <div id="chip-info" class="bg-slate-900/80 rounded-xl p-3 text-xs font-mono text-slate-300 space-y-1 border border-slate-700/50">
+                            <div>VID: <span id="info-vid" class="text-slate-500">--</span></div>
+                            <div>PID: <span id="info-pid" class="text-slate-500">--</span></div>
+                            <div>Nhận diện: <span id="info-ch340" class="text-slate-500">Chưa xác định</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Cột Terminal & Gửi dữ liệu (Bên phải / Dưới) -->
+        <div class="lg:col-span-2 flex flex-col bg-slate-800 rounded-2xl border border-slate-700 shadow-xl overflow-hidden">
+            
+            <!-- Terminal Header -->
+            <div class="px-5 py-3.5 bg-slate-800/80 border-b border-slate-700 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <i class="fa-solid fa-terminal text-emerald-400"></i>
+                    <span class="text-sm font-semibold text-slate-200">Terminal Giám Sát Dữ Liệu</span>
+                </div>
+                <div class="flex items-center space-x-3 text-xs">
+                    <label class="flex items-center space-x-1.5 cursor-pointer text-slate-300">
+                        <input type="checkbox" id="chk-autoscroll" checked class="rounded bg-slate-900 border-slate-700 text-blue-600 focus:ring-0">
+                        <span>Tự động cuộn</span>
+                    </label>
+                    <label class="flex items-center space-x-1.5 cursor-pointer text-slate-300">
+                        <input type="checkbox" id="chk-hex-receive" class="rounded bg-slate-900 border-slate-700 text-blue-600 focus:ring-0">
+                        <span>Nhận dạng HEX</span>
+                    </label>
+                    <button onclick="clearTerminal()" class="text-slate-400 hover:text-white px-2 py-1 rounded bg-slate-700/50 hover:bg-slate-700 transition">
+                        <i class="fa-solid fa-trash-can mr-1"></i> Xóa
+                    </button>
+                </div>
+            </div>
+
+            <!-- Terminal Output Box -->
+            <div id="terminal-output" class="flex-1 bg-slate-950 p-4 font-mono text-xs text-slate-300 overflow-y-auto space-y-1 select-text" style="min-height: 280px; max-height: calc(100vh - 360px);">
+                <div class="text-slate-500 italic">[Hệ thống] Sẵn sàng kết nối cổng USB chứa chip CH340... Vui lòng nhấn "Chọn & Kết nối Cổng USB".</div>
+            </div>
+
+            <!-- Input Controls Area -->
+            <div class="p-4 bg-slate-800 border-t border-slate-700 space-y-3">
+                <div class="flex items-center space-x-2">
+                    <input type="text" id="input-command" disabled placeholder="Nhập chuỗi dữ liệu cần gửi đến thiết bị..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-200 focus:outline-none focus:border-blue-500 disabled:opacity-50 transition" onkeydown="if(event.key==='Enter') sendData()">
+                    
+                    <select id="line-ending" class="bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-xs text-slate-300 focus:outline-none focus:border-blue-500">
+                        <option value="none">Không thêm gì</option>
+                        <option value="lf">\n (LF)</option>
+                        <option value="cr">\r (CR)</option>
+                        <option value="crlf" selected>\r\n (CR+LF)</option>
+                    </select>
+
+                    <button id="btn-send" onclick="sendData()" disabled class="bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2.5 rounded-xl font-medium text-sm transition shadow-lg shadow-emerald-600/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-1.5">
+                        <i class="fa-solid fa-paper-plane"></i>
+                        <span>Gửi</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center justify-between text-xs text-slate-400 px-1">
+                    <div class="flex items-center space-x-4">
+                        <label class="flex items-center space-x-1.5 cursor-pointer">
+                            <input type="checkbox" id="chk-hex-send" class="rounded bg-slate-900 border-slate-700 text-blue-600 focus:ring-0">
+                            <span>Gửi dưới dạng HEX (VD: 41 42 43 hoặc 0x0A)</span>
+                        </label>
+                    </div>
+                    <div id="tx-rx-stats">
+                        TX: <span id="tx-count" class="text-slate-200">0</span> bytes | RX: <span id="rx-count" class="text-slate-200">0</span> bytes
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Modal Cảnh báo tùy chỉnh thay vì alert() -->
+    <div id="custom-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center space-x-3 text-amber-400">
+                <i class="fa-solid fa-triangle-exclamation text-2xl"></i>
+                <h3 id="modal-title" class="text-lg font-bold text-white">Thông báo</h3>
+            </div>
+            <p id="modal-message" class="text-sm text-slate-300 leading-relaxed"></p>
+            <div class="flex justify-end pt-2">
+                <button onclick="closeModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-5 py-2 rounded-xl text-sm font-medium transition shadow-lg">Đã hiểu</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let port = null;
+        let reader = null;
+        let inputDone = null;
+        let inputStream = null;
+        let outputStream = null;
+        let writer = null;
+        let keepReading = false;
+
+        let txBytes = 0;
+        let rxBytes = 0;
+
+        // Kiểm tra xem trình duyệt có hỗ trợ Web Serial API không
+        window.addEventListener('DOMContentLoaded', () => {
+            if (!("serial" in navigator)) {
+                const badge = document.getElementById('browser-support-badge');
+                badge.className = "px-3 py-1 rounded-full text-xs font-medium bg-rose-500/10 text-rose-400 border border-rose-500/20";
+                badge.innerHTML = '<i class="fa-solid fa-circle-xmark mr-1"></i> Trình duyệt không hỗ trợ Web Serial';
+                showModal("Không hỗ trợ", "Trình duyệt của bạn không hỗ trợ Web Serial API. Vui lòng sử dụng Google Chrome, Microsoft Edge hoặc Opera phiên bản mới trên máy tính.");
+            }
+        });
+
+        function showModal(title, message) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-message').innerText = message;
+            document.getElementById('custom-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        }
+
+        function appendTerminal(text, type = 'normal') {
+            const terminal = document.getElementById('terminal-output');
+            const div = document.createElement('div');
+            
+            if (type === 'rx') {
+                div.className = "text-emerald-400";
+            } else if (type === 'tx') {
+                div.className = "text-blue-400";
+            } else if (type === 'error') {
+                div.className = "text-rose-400";
+            } else if (type === 'system') {
+                div.className = "text-amber-400 italic";
+            } else {
+                div.className = "text-slate-300";
+            }
+
+            div.textContent = text;
+            terminal.appendChild(div);
+
+            if (document.getElementById('chk-autoscroll').checked) {
+                terminal.scrollTop = terminal.scrollHeight;
+            }
+        }
+
+        function clearTerminal() {
+            document.getElementById('terminal-output').innerHTML = '';
+            txBytes = 0;
+            rxBytes = 0;
+            updateStats();
+        }
+
+        function updateStats() {
+            document.getElementById('tx-count').innerText = txBytes;
+            document.getElementById('rx-count').innerText = rxBytes;
+        }
+
+        // Bắt đầu quy trình kết nối cổng Serial / USB
+        async function connectSerial() {
+            if (!("serial" in navigator)) {
+                showModal("Lỗi", "Trình duyệt không hỗ trợ Web Serial API.");
+                return;
+            }
+
+            try {
+                // Yêu cầu người dùng chọn cổng USB
+                port = await navigator.serial.requestPort();
+                
+                const info = port.getInfo();
+                const vid = info.usbVendorId ? '0x' + info.usbVendorId.toString(16).padStart(4, '0').toUpperCase() : 'Không rõ';
+                const pid = info.usbProductId ? '0x' + info.usbProductId.toString(16).padStart(4, '0').toUpperCase() : 'Không rõ';
+
+                document.getElementById('info-vid').innerText = vid;
+                document.getElementById('info-pid').innerText = pid;
+
+                // Kiểm tra xem có phải CH340 không (Vendor ID phổ biến của CH340 là 0x1A86, PID thường là 0x7523 hoặc 0x5523)
+                let isCH340 = false;
+                if (info.usbVendorId === 0x1A86) {
+                    isCH340 = true;
+                    document.getElementById('info-ch340').innerText = `Xác thực CH340 chuẩn (VID: 0x1A86, PID: ${pid})`;
+                    document.getElementById('device-chip-badge').innerText = "CH340 Phát Hiện!";
+                    document.getElementById('device-chip-badge').className = "text-xs px-2.5 py-1 rounded-lg bg-emerald-500/20 text-emerald-400 font-mono font-bold border border-emerald-500/30";
+                } else {
+                    document.getElementById('info-ch340').innerText = `Thiết bị khác (VID: ${vid}, PID: ${pid})`;
+                    document.getElementById('device-chip-badge').innerText = "Khác / Không rõ CH340";
+                    document.getElementById('device-chip-badge').className = "text-xs px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-400 font-mono border border-amber-500/30";
+                }
+
+                // Lấy thông số Baud rate từ giao diện
+                const baudRate = parseInt(document.getElementById('baud-rate').value);
+                const dataBits = parseInt(document.getElementById('data-bits').value);
+                const stopBits = parseInt(document.getElementById('stop-bits').value);
+                const parity = document.getElementById('parity').value;
+
+                await port.open({
+                    baudRate: baudRate,
+                    dataBits: dataBits,
+                    stopBits: stopBits,
+                    parity: parity
+                });
+
+                // Cập nhật giao diện khi kết nối thành công
+                document.getElementById('status-indicator').className = "w-3.5 h-3.5 rounded-full bg-emerald-500 shadow-lg shadow-emerald-500/55";
+                document.getElementById('status-text').innerText = "Đã kết nối thành công";
+                document.getElementById('btn-connect').disabled = true;
+                document.getElementById('btn-disconnect').disabled = false;
+                document.getElementById('input-command').disabled = false;
+                document.getElementById('btn-send').disabled = false;
+
+                appendTerminal(`[Hệ thống] Đã mở cổng thành công với tốc độ ${baudRate} baud.`, 'system');
+
+                // Lắng nghe dữ liệu nhận vào
+                keepReading = true;
+                readLoop();
+
+            } catch (error) {
+                console.error("Lỗi kết nối:", error);
+                appendTerminal(`[Lỗi] ${error.message}`, 'error');
+                showModal("Lỗi Kết Nối", "Không thể kết nối cổng USB. Có thể cổng đang được mở bởi ứng dụng khác hoặc bạn đã hủy chọn.");
+            }
+        }
+
+        // Vòng lặp đọc dữ liệu từ thiết bị Serial
+        async function readLoop() {
+            const textDecoder = new TextDecoderStream();
+            inputDone = port.readable.pipeTo(textDecoder.writable);
+            inputStream = textDecoder.readable;
+            reader = inputStream.getReader();
+
+            try {
+                while (keepReading) {
+                    const { value, done } = await reader.read();
+                    if (done) {
+                        break;
+                    }
+                    if (value) {
+                        rxBytes += value.length;
+                        updateStats();
+
+                        if (document.getElementById('chk-hex-receive').checked) {
+                            // Hiển thị dạng HEX nếu được chọn
+                            const encoder = new TextEncoder();
+                            const bytes = encoder.encode(value);
+                            const hexString = Array.from(bytes).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+                            appendTerminal(`[RX HEX] ${hexString}`, 'rx');
+                        } else {
+                            appendTerminal(value, 'rx');
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error("Lỗi đọc dữ liệu:", error);
+                appendTerminal(`[Lỗi Đọc] ${error.message}`, 'error');
+            } finally {
+                if (reader) {
+                    reader.releaseLock();
+                }
+            }
+        }
+
+        // Gửi dữ liệu ra thiết bị
+        async function sendData() {
+            if (!port || !port.writable) {
+                showModal("Lỗi", "Chưa có cổng nào được kết nối.");
+                return;
+            }
+
+            let inputVal = document.getElementById('input-command').value;
+            if (!inputVal) return;
+
+            const isHexSend = document.getElementById('chk-hex-send').checked;
+            let dataToSend = new Uint8Array();
+
+            if (isHexSend) {
+                // Xử lý chuỗi hex (VD: "41 42 43" hoặc "0x41, 0x42")
+                try {
+                    const cleanHex = inputVal.replace(/0x/g, '').replace(/[\s,]+/g, ' ').trim();
+                    const hexArray = cleanHex.split(' ').map(h => parseInt(h, 16));
+                    if (hexArray.some(isNaN)) {
+                        throw new Error("Định dạng HEX không hợp lệ.");
+                    }
+                    dataToSend = new Uint8Array(hexArray);
+                } catch (err) {
+                    showModal("Lỗi cú pháp HEX", "Vui lòng nhập đúng định dạng HEX (ví dụ: 41 42 43 hoặc FF 00 5A)");
+                    return;
+                }
+            } else {
+                // Thêm line ending nếu có
+                const lineEnding = document.getElementById('line-ending').value;
+                if (lineEnding === 'lf') inputVal += '\n';
+                else if (lineEnding === 'cr') inputVal += '\r';
+                else if (lineEnding === 'crlf') inputVal += '\r\n';
+
+                const encoder = new TextEncoder();
+                dataToSend = encoder.encode(inputVal);
+            }
+
+            try {
+                const writer = port.writable.getWriter();
+                await writer.write(dataToSend);
+                writer.releaseLock();
+
+                txBytes += dataToSend.length;
+                updateStats();
+
+                if (isHexSend) {
+                    const hexStr = Array.from(dataToSend).map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+                    appendTerminal(`[TX HEX] ${hexStr}`, 'tx');
+                } else {
+                    appendTerminal(`[TX] ${inputVal.trimEnd()}`, 'tx');
+                }
+
+                document.getElementById('input-command').value = '';
+            } catch (error) {
+                console.error("Lỗi gửi dữ liệu:", error);
+                appendTerminal(`[Lỗi Gửi] ${error.message}`, 'error');
+            }
+        }
+
+        // Ngắt kết nối cổng Serial
+        async function disconnectSerial() {
+            keepReading = false;
+            try {
+                if (reader) {
+                    await reader.cancel();
+                    if (inputDone) {
+                        await inputDone.catch(() => {});
+                    }
+                }
+                if (port) {
+                    await port.close();
+                }
+            } catch (error) {
+                console.error("Lỗi khi ngắt kết nối:", error);
+            }
+
+            port = null;
+            document.getElementById('status-indicator').className = "w-3.5 h-3.5 rounded-full bg-rose-500 shadow-lg shadow-rose-500/55 animate-pulse";
+            document.getElementById('status-text').innerText = "Đã ngắt kết nối";
+            document.getElementById('device-chip-badge').innerText = "CH340: Chưa rõ";
+            document.getElementById('device-chip-badge').className = "text-xs px-2.5 py-1 rounded-lg bg-slate-700 text-slate-300 font-mono";
+            
+            document.getElementById('btn-connect').disabled = false;
+            document.getElementById('btn-disconnect').disabled = true;
+            document.getElementById('input-command').disabled = true;
+            document.getElementById('btn-send').disabled = true;
+
+            document.getElementById('info-vid').innerText = '--';
+            document.getElementById('info-pid').innerText = '--';
+            document.getElementById('info-ch340').innerText = 'Chưa xác định';
+
+            appendTerminal("[Hệ thống] Đã ngắt kết nối cổng Serial.", 'system');
+        }
+
+        // Tự động ngắt kết nối khi đóng trang
+        window.addEventListener('beforeunload', async () => {
+            if (port) {
+                keepReading = false;
+                if (reader) await reader.cancel();
+                await port.close();
+            }
+        });
+    </script>
+</body>
+</html>
