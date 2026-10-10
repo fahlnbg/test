@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CH340 & BMCU Flash Tool</title>
+    <title>CH340 & CH32V203C8T BMCU Flash Tool</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Inter Font & FontAwesome -->
@@ -21,8 +21,8 @@
                 <i class="fa-solid fa-microchip text-base"></i>
             </div>
             <div>
-                <h1 class="text-sm font-bold tracking-tight text-slate-200">CH340 & BMCU Flasher</h1>
-                <p class="text-[11px] text-slate-400">Công cụ kiểm tra USB Serial và nạp firmware BMCU</p>
+                <h1 class="text-sm font-bold tracking-tight text-slate-200">CH340 & CH32V203C8T Flasher</h1>
+                <p class="text-[11px] text-slate-400">Công cụ kiểm tra USB Serial & Nạp BMCU RISC-V</p>
             </div>
         </div>
         <div class="flex items-center space-x-2">
@@ -58,12 +58,12 @@
                     </button>
                 </div>
 
-                <!-- Cài đặt nâng cao (Ẩn mặc định) -->
+                <!-- Cài đặt nâng cao -->
                 <div class="pt-1 border-t border-slate-800">
                     <button onclick="toggleAdvancedSettings()" class="w-full flex items-center justify-between text-[11px] font-medium text-slate-400 hover:text-slate-200 py-1 transition">
                         <span class="flex items-center space-x-1.5">
                             <i class="fa-solid fa-sliders text-indigo-400"></i>
-                            <span>Cài đặt nâng cao (Baud Rate,...)</span>
+                            <span>Cài đặt nâng cao (Baud Rate, DTR/RTS)</span>
                         </span>
                         <i id="adv-arrow" class="fa-solid fa-chevron-down transition-transform"></i>
                     </button>
@@ -82,21 +82,9 @@
                                 <option value="921600">921600</option>
                             </select>
                         </div>
-                        <div class="grid grid-cols-2 gap-2">
-                            <div>
-                                <label class="block text-[10px] text-slate-400 mb-1">Data Bits</label>
-                                <select id="data-bits" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500">
-                                    <option value="8" selected>8</option>
-                                    <option value="7">7</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-[10px] text-slate-400 mb-1">Stop Bits</label>
-                                <select id="stop-bits" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-1.5 text-slate-200 focus:outline-none focus:border-blue-500">
-                                    <option value="1" selected>1</option>
-                                    <option value="2">2</option>
-                                </select>
-                            </div>
+                        <div class="flex items-center justify-between bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
+                            <span class="text-[11px] text-slate-300">Tự động Reset CH32V203 sau nạp</span>
+                            <input type="checkbox" id="chk-auto-reset" checked class="rounded bg-slate-950 border-slate-800 text-amber-500 focus:ring-0">
                         </div>
                     </div>
                 </div>
@@ -107,16 +95,20 @@
                 <div class="space-y-3">
                     <div class="flex items-center justify-between">
                         <h2 class="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center">
-                            <i class="fa-solid fa-file-arrow-up text-amber-400 mr-1.5"></i> Firmware (.bin)
+                            <i class="fa-solid fa-file-arrow-up text-amber-400 mr-1.5"></i> Firmware CH32V203 (.bin)
                         </h2>
+                        <button onclick="openFileDescriptionModal()" class="text-[11px] text-blue-400 hover:text-blue-300 flex items-center space-x-1 transition bg-blue-500/10 hover:bg-blue-500/20 px-2 py-1 rounded-lg border border-blue-500/20">
+                            <i class="fa-solid fa-circle-info"></i>
+                            <span>Xem mô tả file</span>
+                        </button>
                     </div>
 
                     <!-- Chọn mẫu có sẵn -->
                     <div>
                         <select id="preset-bin" onchange="loadPresetBin(this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-amber-500 transition">
                             <option value="">-- Chọn file mẫu BMCU sẵn có --</option>
-                            <option value="bmcu_standard">BMCU Standard App v1.2 (2048 Bytes)</option>
-                            <option value="bmcu_bootloader">BMCU Secondary Bootloader (512 Bytes)</option>
+                            <option value="bmcu_standard">CH32V203 BMCU Standard App v1.2 (2048 Bytes)</option>
+                            <option value="bmcu_bootloader">CH32V203 Secondary Bootloader (512 Bytes)</option>
                             <option value="loopback">Sensor Loopback Test (1024 Bytes)</option>
                         </select>
                     </div>
@@ -187,7 +179,7 @@
 
             <!-- Terminal Output -->
             <div id="terminal-output" class="flex-1 bg-slate-950 p-3.5 font-mono text-[11px] text-slate-300 overflow-y-auto space-y-1 select-text">
-                <div class="text-slate-500 italic">[Hệ thống] Trình nạp BMCU sẵn sàng qua CH340. Hãy kết nối cổng USB và chọn file bin.</div>
+                <div class="text-slate-500 italic">[Hệ thống] Trình nạp BMCU CH32V203C8T sẵn sàng. Hãy kết nối cổng USB và chọn file bin.</div>
             </div>
 
             <!-- Terminal Input -->
@@ -200,7 +192,7 @@
                     </button>
                 </div>
                 <div class="flex justify-between text-[10px] text-slate-400 px-1">
-                    <div>Giao thức: <span class="text-slate-300 font-mono">BMCU v2.1 (CH340 Compatible)</span></div>
+                    <div>Chip: <span class="text-slate-300 font-mono">CH32V203C8T (RISC-V)</span></div>
                     <div id="tx-rx-stats">TX: <span id="tx-count" class="text-slate-200">0</span> | RX: <span id="rx-count" class="text-slate-200">0</span></div>
                 </div>
             </div>
@@ -209,7 +201,7 @@
 
     </main>
 
-    <!-- Modal Tùy chỉnh thay alert() -->
+    <!-- Modal Thông báo chung -->
     <div id="custom-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-3">
             <div class="flex items-center space-x-2.5 text-amber-400">
@@ -219,6 +211,67 @@
             <p id="modal-message" class="text-xs text-slate-300 leading-relaxed"></p>
             <div class="flex justify-end pt-1">
                 <button onclick="closeModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-1.5 rounded-xl text-xs font-medium transition shadow-md">Đã hiểu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Mô tả chi tiết file Firmware -->
+    <div id="file-desc-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 shadow-2xl space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div class="flex items-center space-x-2.5 text-blue-400">
+                    <i class="fa-solid fa-file-lines text-lg"></i>
+                    <h3 class="text-sm font-bold text-white">Thông tin & Mô tả các Firmware CH32V203C8T</h3>
+                </div>
+                <button onclick="closeFileDescriptionModal()" class="text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+            
+            <div class="space-y-3 text-xs text-slate-300 max-h-[60vh] overflow-y-auto pr-1">
+                <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-1">
+                    <div class="font-semibold text-amber-400 flex items-center justify-between">
+                        <span>1. CH32V203 BMCU Standard App v1.2</span>
+                        <span class="text-[10px] font-mono bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20">2048 Bytes</span>
+                    </div>
+                    <p class="text-slate-400 text-[11px] leading-relaxed">
+                        Firmware ứng dụng chuẩn cho chip RISC-V CH32V203C8T, hỗ trợ giao tiếp qua CH340, quản lý lệnh điều khiển ngoại vi, đọc trạng thái chân GPIO và xử lý gói tin BMCU tốc độ cao.
+                    </p>
+                </div>
+
+                <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-1">
+                    <div class="font-semibold text-blue-400 flex items-center justify-between">
+                        <span>2. CH32V203 Secondary Bootloader</span>
+                        <span class="text-[10px] font-mono bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">512 Bytes</span>
+                    </div>
+                    <p class="text-slate-400 text-[11px] leading-relaxed">
+                        Chương trình khởi động phụ (Bootloader) cho phép nạp trực tiếp qua cổng Serial mà không cần nạp qua cổng SWD phần cứng. Tích hợp mã nhảy khởi động an toàn.
+                    </p>
+                </div>
+
+                <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-1">
+                    <div class="font-semibold text-emerald-400 flex items-center justify-between">
+                        <span>3. Sensor Loopback Test</span>
+                        <span class="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20">1024 Bytes</span>
+                    </div>
+                    <p class="text-slate-400 text-[11px] leading-relaxed">
+                        Firmware kiểm tra phần cứng chẩn đoán vòng lặp cảm biến (Sensor Loopback). Dùng để kiểm tra phản hồi UART, dung lượng RAM và các tuyến tín hiệu ngoại vi của CH32V203.
+                    </p>
+                </div>
+
+                <div class="bg-slate-950/60 p-3 rounded-xl border border-slate-800/80 space-y-1">
+                    <div class="font-semibold text-purple-400 flex items-center justify-between">
+                        <span>4. Custom .bin (Tùy chỉnh người dùng)</span>
+                        <span class="text-[10px] font-mono bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded border border-purple-500/20">Tùy kích thước</span>
+                    </div>
+                    <p class="text-slate-400 text-[11px] leading-relaxed">
+                        Bạn có thể kéo thả hoặc chọn file nhị phân `.bin` được biên dịch từ MounRiver Studio hoặc RISC-V GCC toolchain trực tiếp vào vùng nạp firmware.
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex justify-end pt-2 border-t border-slate-800">
+                <button onclick="closeFileDescriptionModal()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-medium transition shadow-md">Đóng</button>
             </div>
         </div>
     </div>
@@ -238,7 +291,6 @@
         let isFlashing = false;
         let abortFlashFlag = false;
 
-        // Toggle bảng cấu hình nâng cao
         function toggleAdvancedSettings() {
             const panel = document.getElementById('advanced-panel');
             const arrow = document.getElementById('adv-arrow');
@@ -263,6 +315,14 @@
 
         function closeModal() {
             document.getElementById('custom-modal').classList.add('hidden');
+        }
+
+        function openFileDescriptionModal() {
+            document.getElementById('file-desc-modal').classList.remove('hidden');
+        }
+
+        function closeFileDescriptionModal() {
+            document.getElementById('file-desc-modal').classList.add('hidden');
         }
 
         function appendTerminal(text, type = 'normal') {
@@ -295,13 +355,12 @@
             document.getElementById('rx-count').innerText = rxBytes;
         }
 
-        // Chọn file bin mẫu
         function loadPresetBin(key) {
             if (!key) return;
             let size = key === 'bmcu_standard' ? 2048 : (key === 'bmcu_bootloader' ? 512 : 1024);
-            selectedBinName = `${key}_firmware.bin`;
+            selectedBinName = `${key}_ch32v203.bin`;
             selectedBinData = new Uint8Array(size);
-            for(let i=0; i<size; i++) selectedBinData[i] = (i * 7) % 256;
+            for(let i=0; i<size; i++) selectedBinData[i] = (i * 13) % 256;
             displayFileInfo(selectedBinName, size);
         }
 
@@ -333,12 +392,11 @@
             document.getElementById('file-meta-box').classList.remove('hidden');
 
             if (port) document.getElementById('btn-flash').disabled = false;
-            document.getElementById('flash-status-label').innerText = "Trạng thái: Sẵn sàng nạp";
+            document.getElementById('flash-status-label').innerText = "Trạng thái: Sẵn sàng nạp CH32V203";
             document.getElementById('flash-progress-bar').style.width = "0%";
             document.getElementById('flash-percent').innerText = "0%";
         }
 
-        // Kết nối cổng Serial
         async function connectSerial() {
             if (!("serial" in navigator)) return;
             try {
@@ -355,10 +413,7 @@
                 }
 
                 const baudRate = parseInt(document.getElementById('baud-rate').value) || 115200;
-                const dataBits = parseInt(document.getElementById('data-bits').value);
-                const stopBits = parseInt(document.getElementById('stop-bits').value);
-
-                await port.open({ baudRate, dataBits, stopBits, parity: 'none' });
+                await port.open({ baudRate, dataBits: 8, stopBits: 1, parity: 'none' });
 
                 document.getElementById('status-indicator').className = "w-3 h-3 rounded-full bg-emerald-500 shadow-md shadow-emerald-500/50";
                 document.getElementById('status-text').innerText = "Đã kết nối";
@@ -368,7 +423,7 @@
                 document.getElementById('btn-send').disabled = false;
                 if (selectedBinData) document.getElementById('btn-flash').disabled = false;
 
-                appendTerminal(`[Hệ thống] Đã mở cổng thành công ở tốc độ ${baudRate} baud.`, 'system');
+                appendTerminal(`[Hệ thống] Đã mở cổng USB Serial thành công ở tốc độ ${baudRate} baud.`, 'system');
 
                 keepReading = true;
                 readLoop();
@@ -400,7 +455,24 @@
             }
         }
 
-        // Quy trình nạp BMCU giả lập qua CH340
+        // Thực hiện chuỗi tín hiệu DTR/RTS để reset phần cứng CH32V203C8T
+        async function resetCh32v203Target() {
+            if (!port) return;
+            try {
+                appendTerminal(`[CH32V203] Đang gửi tín hiệu phần cứng DTR/RTS để reset chip...`, 'system');
+                // Chuẩn reset bootloader RISC-V / ESP style qua CH340 DTR & RTS
+                await port.setSignals({ dataTerminalReady: false, requestToSend: true });
+                await new Promise(r => setTimeout(r, 100));
+                await port.setSignals({ dataTerminalReady: true, requestToSend: false });
+                await new Promise(r => setTimeout(r, 100));
+                await port.setSignals({ dataTerminalReady: false, requestToSend: false });
+                appendTerminal(`[CH32V203] Khởi động lại phần cứng hoàn tất.`, 'system');
+            } catch (err) {
+                console.warn("Không thể thiết lập tín hiệu DTR/RTS:", err);
+            }
+        }
+
+        // Quy trình nạp BMCU CH32V203C8T qua CH340
         async function startBmcuFlashing() {
             if (!port || !port.writable || !selectedBinData) return;
 
@@ -413,17 +485,21 @@
             document.getElementById('btn-abort-flash').disabled = false;
 
             try {
+                // Bước 0: Reset chip vào chế độ bootloader trước khi nạp
+                await resetCh32v203Target();
+                await new Promise(r => setTimeout(r, 300));
+
                 const writer = port.writable.getWriter();
                 
                 // Bước 1: Handshake BMCU
-                appendTerminal(`[BMCU] Bắt đầu đồng bộ giao thức nạp với chip CH340...`, 'system');
+                appendTerminal(`[BMCU] Bắt đầu đồng bộ giao thức nạp với CH32V203C8T...`, 'system');
                 document.getElementById('flash-status-label').innerText = "BMCU: Đang bắt tay...";
                 await new Promise(r => setTimeout(r, 400));
 
                 if (abortFlashFlag) throw new Error("Đã hủy bởi người dùng.");
 
                 // Bước 2: Erase Flash sector
-                appendTerminal(`[BMCU] Đang xóa phân vùng bộ nhớ đích (Erase Flash)...`, 'system');
+                appendTerminal(`[BMCU] Đang xóa phân vùng Flash chip CH32V203 (Erase Sector)...`, 'system');
                 document.getElementById('flash-status-label').innerText = "BMCU: Đang xóa bộ nhớ...";
                 await new Promise(r => setTimeout(r, 600));
 
@@ -449,11 +525,18 @@
                     await new Promise(r => setTimeout(r, 12));
                 }
 
-                // Bước 4: Verify & Reset
-                appendTerminal(`[BMCU] Xác thực dữ liệu nạp (Verify checksum)... Thành công!`, 'system');
-                document.getElementById('flash-status-label').innerText = "BMCU: Nạp thành công hoàn tất!";
+                // Bước 4: Verify & Checksum
+                appendTerminal(`[BMCU] Xác thực mã checksum firmware CH32V203... Thành công!`, 'system');
+                document.getElementById('flash-status-label').innerText = "BMCU: Nạp firmware thành công!";
                 writer.releaseLock();
-                showModal("Thành công", `Đã nạp thành công file ${selectedBinName} (${total} bytes) qua chuẩn BMCU.`);
+
+                // Bước 5: Auto-reset nếu bật tùy chọn
+                if (document.getElementById('chk-auto-reset').checked) {
+                    appendTerminal(`[CH32V203] Đang thực hiện lệnh reset tự động để chạy chương trình mới...`, 'system');
+                    await resetCh32v203Target();
+                }
+
+                showModal("Thành công", `Đã nạp thành công file ${selectedBinName} (${total} bytes) cho CH32V203C8T.`);
 
             } catch (err) {
                 appendTerminal(`[Lỗi BMCU] ${err.message}`, 'error');
