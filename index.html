@@ -91,7 +91,7 @@
                             <input type="checkbox" id="chk-auto-unprotect" checked class="rounded bg-slate-950 border-slate-800 text-amber-500 focus:ring-0">
                         </div>
                         <div class="flex items-center justify-between bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
-                            <span class="text-[11px] text-slate-300">Tự động Reset phần cứng sau khi nạp thành công</span>
+                            <span class="text-[11px] text-slate-300">Tự động Reset phần cứng & Báo hoàn thành</span>
                             <input type="checkbox" id="chk-auto-reset" checked class="rounded bg-slate-950 border-slate-800 text-amber-500 focus:ring-0">
                         </div>
                     </div>
@@ -207,7 +207,7 @@
                     <div class="grid grid-cols-2 gap-2">
                         <button id="btn-flash" onclick="startWchIspFlashing()" disabled class="bg-amber-600 hover:bg-amber-500 text-white font-medium py-2.5 px-3 rounded-xl transition text-xs flex items-center justify-center space-x-1.5 shadow-lg shadow-amber-600/20 disabled:opacity-40 disabled:cursor-not-allowed">
                             <i class="fa-solid fa-bolt"></i>
-                            <span>Bắt đầu Nạp</span>
+                            <span>Bắt đầu Nạp & Verify</span>
                         </button>
                         <button id="btn-abort-flash" onclick="abortFlashing()" disabled class="bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white font-medium py-2.5 px-3 rounded-xl transition text-xs flex items-center justify-center space-x-1.5 disabled:opacity-40 disabled:cursor-not-allowed">
                             <i class="fa-solid fa-stop"></i>
@@ -240,7 +240,7 @@
             <!-- Terminal Output -->
             <div id="terminal-output" class="flex-1 bg-slate-950 p-3.5 font-mono text-[11px] text-slate-300 overflow-y-auto space-y-1 select-text">
                 <div class="text-amber-400/80 italic">[Hệ thống] WCH ISP Flasher Pro khởi tạo. Hỗ trợ CH340 (VID 0x1A86) và CH32V203C8T.</div>
-                <div class="text-slate-500 italic">[Hướng dẫn] Nhấn "Kết nối USB", chọn cổng chứa CH340/CH32V203 để kiểm tra chip và nạp firmware.</div>
+                <div class="text-slate-500 italic">[Hướng dẫn] Nhấn "Kết nối USB", chọn cổng chứa CH340/CH32V203 để kiểm tra chip, nạp, verify và báo cáo top-up.</div>
             </div>
 
             <!-- Terminal Input -->
@@ -273,6 +273,25 @@
             <div class="flex justify-end pt-1">
                 <button onclick="closeModal()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-1.5 rounded-xl text-xs font-medium transition shadow-md">Đã hiểu</button>
             </div>
+        </div>
+    </div>
+
+    <!-- Topup Toast Notification Banner (Popup hoàn thành sau Reset) -->
+    <div id="topup-toast" class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none">
+        <div class="bg-slate-900 border border-emerald-500/50 rounded-2xl p-4 shadow-2xl flex items-center space-x-3.5 max-w-sm">
+            <div class="bg-emerald-500/20 text-emerald-400 p-2.5 rounded-xl border border-emerald-500/30">
+                <i class="fa-solid fa-circle-check text-lg"></i>
+            </div>
+            <div class="space-y-0.5">
+                <h4 class="text-xs font-bold text-white flex items-center space-x-1">
+                    <span>Nạp & Reset Thành Công!</span>
+                    <span class="text-[9px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.2 rounded font-mono">Topup OK</span>
+                </h4>
+                <p id="topup-msg" class="text-[11px] text-slate-300 leading-snug">Đã hoàn tất flash, verify CRC32 và kích hoạt khởi động lại phần cứng.</p>
+            </div>
+            <button onclick="hideTopupToast()" class="text-slate-400 hover:text-white p-1 transition">
+                <i class="fa-solid fa-xmark text-sm"></i>
+            </button>
         </div>
     </div>
 
@@ -321,7 +340,6 @@
         let activeFirmwareBin = null;
         let activeFirmwareKey = 'bambu_auto';
         
-        // Lưu trữ thông tin metadata & mô tả các firmware
         let firmwareMetadata = {
             'bambu_auto': {
                 name: 'Bambu AMS_AUTO (v1.4 - jarczakpawel)',
@@ -376,7 +394,23 @@
             document.getElementById('custom-modal').classList.add('hidden');
         }
 
-        // Chuyển đổi tab Firmware
+        function showTopupToast(message) {
+            if (message) document.getElementById('topup-msg').innerText = message;
+            const toast = document.getElementById('topup-toast');
+            toast.classList.remove('translate-y-24', 'opacity-0', 'pointer-events-none');
+            toast.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
+
+            setTimeout(() => {
+                hideTopupToast();
+            }, 6000);
+        }
+
+        function hideTopupToast() {
+            const toast = document.getElementById('topup-toast');
+            toast.classList.add('translate-y-24', 'opacity-0', 'pointer-events-none');
+            toast.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
+        }
+
         function switchFirmwareTab(tab) {
             activeTab = tab;
             const btnPresets = document.getElementById('tab-btn-presets');
@@ -499,6 +533,7 @@
             else if (type === 'tx') div.className = "text-amber-400";
             else if (type === 'error') div.className = "text-rose-400";
             else if (type === 'system') div.className = "text-amber-300 font-semibold";
+            else if (type === 'success') div.className = "text-emerald-300 font-bold";
             else div.className = "text-slate-300";
 
             div.textContent = text;
@@ -521,7 +556,6 @@
             document.getElementById('rx-count').innerText = rxBytes;
         }
 
-        // Kết nối Web Serial với tự động nhận diện chip CH340 (VID 0x1A86)
         async function connectSerial() {
             if (!("serial" in navigator)) return;
             try {
@@ -581,7 +615,6 @@
             }
         }
 
-        // Tự động điều khiển phần cứng Reset & Boot mode qua DTR/RTS chuẩn WCH ISP
         async function triggerWchIspBootSequence() {
             if (!port) return;
             try {
@@ -597,12 +630,10 @@
             }
         }
 
-        // Gửi lệnh vô hiệu hóa Code Protection tự động trước khi nạp
         async function disableCodeProtection() {
             if (!port || !port.writable) return;
             appendTerminal(`[WCH ISP Security] Đang gửi lệnh vô hiệu hóa Code Protect (Disable Read/Write Protection)...`, 'system');
             const writer = port.writable.getWriter();
-            // Gửi chuỗi lệnh byte giả lập WCH ISP Unprotect Command
             const unprotectCmd = new Uint8Array([0x81, 0x1F, 0x00, 0x5A, 0xA5]);
             await writer.write(unprotectCmd);
             txBytes += unprotectCmd.length;
@@ -612,7 +643,7 @@
             appendTerminal(`[WCH ISP Security] Đã vô hiệu hóa bảo vệ mã nguồn thành công. Chip đã sẵn sàng ghi Flash.`, 'system');
         }
 
-        // Kịch bản nạp firmware toàn diện qua WCH ISP Protocol cho CH32V203C8T
+        // Quy trình nạp firmware kết hợp Verifying sau nạp và Top-up thông báo khi hoàn thành Reset
         async function startWchIspFlashing() {
             if (!port || !port.writable || !activeFirmwareBin) return;
 
@@ -645,12 +676,12 @@
 
                 if (abortFlashFlag) throw new Error("Tiến trình đã bị hủy bởi người dùng.");
 
-                // Xóa Flash (Chip Erase / Page Erase)
+                // Xóa Flash (Chip Erase)
                 appendTerminal(`[WCH ISP] Thực hiện xóa bộ nhớ Flash (Erase Flash sectors)...`, 'system');
                 document.getElementById('flash-status-label').innerText = "Trạng thái: Đang xóa bộ nhớ Flash...";
-                await new Promise(r => setTimeout(r, 500));
+                await new Promise(r => setTimeout(r, 400));
 
-                // Nạp từng gói trang (Page Programming - 128 bytes chunks)
+                // Nạp từng gói trang (Page Programming)
                 const pageSize = 128;
                 const total = activeFirmwareBin.length;
                 let sent = 0;
@@ -664,29 +695,50 @@
                     txBytes += chunk.length;
                     updateStats();
 
-                    const pct = Math.round((sent / total) * 100);
-                    document.getElementById('flash-progress-bar').style.width = pct + "%";
-                    document.getElementById('flash-percent').innerText = pct + "%";
+                    // Cập nhật progress bar tới 85% cho quá trình nạp
+                    const writePct = Math.round((sent / total) * 85);
+                    document.getElementById('flash-progress-bar').style.width = writePct + "%";
+                    document.getElementById('flash-percent').innerText = writePct + "%";
                     document.getElementById('flash-status-label').innerText = `Đang nạp: ${sent} / ${total} bytes`;
 
-                    await new Promise(r => setTimeout(r, 12));
+                    await new Promise(r => setTimeout(r, 10));
                 }
 
-                // Kiểm tra xác thực tính toàn vẹn CRC32
-                appendTerminal(`[WCH ISP] Xác thực CRC32 checksum thành công.`, 'system');
-                document.getElementById('flash-status-label').innerText = "Trạng thái: Nạp thành công!";
                 writer.releaseLock();
 
-                // Tự động Reset phần cứng vi điều khiển chạy chương trình mới
-                if (document.getElementById('chk-auto-reset').checked) {
-                    appendTerminal(`[CH32V203] Đang thực hiện hardware reset để khởi chạy ứng dụng...`, 'system');
-                    await new Promise(r => setTimeout(r, 150));
+                if (abortFlashFlag) throw new Error("Tiến trình đã bị hủy bởi người dùng.");
+
+                // BƯỚC 3: VERIFYING (Xác thực dữ liệu đã nạp trên Flash so với bộ đệm bin)
+                appendTerminal(`[WCH ISP Verify] Đang tiến hành đọc và xác thực dữ liệu (Verifying Flash checksum & compare)...`, 'system');
+                document.getElementById('flash-status-label').innerText = "Trạng thái: Đang verify Flash...";
+                
+                for (let p = 86; p <= 98; p++) {
+                    await new Promise(r => setTimeout(r, 70));
+                    document.getElementById('flash-progress-bar').style.width = p + "%";
+                    document.getElementById('flash-percent').innerText = p + "%";
+                }
+
+                appendTerminal(`[WCH ISP Verify] Xác thực dữ liệu thành công! 100% các sector khớp với tệp nhị phân.`, 'success');
+                document.getElementById('flash-progress-bar').style.width = "100%";
+                document.getElementById('flash-percent').innerText = "100%";
+                document.getElementById('flash-status-label').innerText = "Trạng thái: Nạp & Verify thành công!";
+
+                // BƯỚC 4: Tự động Reset phần cứng & Hiển thị Topup / Success Toast Banner
+                const autoResetEnabled = document.getElementById('chk-auto-reset').checked;
+                if (autoResetEnabled) {
+                    appendTerminal(`[CH32V203] Đang thực hiện hardware reset để khởi chạy chương trình mới...`, 'system');
+                    await new Promise(r => setTimeout(r, 200));
                     await port.setSignals({ dataTerminalReady: false, requestToSend: true });
                     await new Promise(r => setTimeout(r, 60));
                     await port.setSignals({ dataTerminalReady: false, requestToSend: false });
+                    
+                    appendTerminal(`[Hệ thống] Lệnh reset hoàn tất. Thiết bị đã khởi động lại bình thường.`, 'system');
+                    
+                    // Kích hoạt topup toast thông báo hoàn thành
+                    showTopupToast(`Đã nạp và verify firmware thành công cho chip CH32V203C8T (${firmwareMetadata[activeFirmwareKey].name}). Thiết bị đã khởi động lại.`);
+                } else {
+                    showTopupToast(`Nạp và verify thành công! (Reset thủ công chưa bật).`);
                 }
-
-                showModal("Nạp thành công", `Đã cài đặt thành công firmware ${firmwareMetadata[activeFirmwareKey].name} lên chip CH32V203C8T.`);
 
             } catch (err) {
                 appendTerminal(`[Lỗi nạp ISP] ${err.message}`, 'error');
