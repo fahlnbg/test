@@ -123,9 +123,71 @@
                 </div>
             </div>
 
+            <!-- Thẻ Nạp Firmware / File Bin mới -->
+            <div class="bg-slate-800 rounded-2xl p-5 border border-slate-700 shadow-xl">
+                <h2 class="text-sm font-semibold text-slate-300 uppercase tracking-wider mb-4 flex items-center">
+                    <i class="fa-solid fa-file-arrow-up text-amber-400 mr-2"></i> Nạp dữ liệu / Firmware (.bin)
+                </h2>
+
+                <div class="space-y-4">
+                    <!-- Chọn file mẫu có sẵn -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1.5">Chọn file mẫu có sẵn</label>
+                        <select id="preset-bin" onchange="loadPresetBin(this.value)" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500 transition">
+                            <option value="">-- Chọn file bin mẫu --</option>
+                            <option value="blink">Blink LED Test (ESP8266/ESP32 - 1KB)</option>
+                            <option value="sensor">Sensor Read Demo (Arduino - 2.5KB)</option>
+                            <option value="loopback">Loopback Test Firmware (512 Bytes)</option>
+                        </select>
+                    </div>
+
+                    <!-- Khu vực kéo thả file bin -->
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1.5">Hoặc tải file tự chọn (.bin)</label>
+                        <div id="drop-zone" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event)" class="border-2 border-dashed border-slate-700 hover:border-amber-500 bg-slate-900/50 hover:bg-slate-900 rounded-xl p-4 text-center cursor-pointer transition flex flex-col items-center justify-center space-y-2">
+                            <i class="fa-solid fa-cloud-arrow-up text-2xl text-slate-400"></i>
+                            <div class="text-xs text-slate-300">
+                                <span class="font-medium text-amber-400">Nhấn để chọn</span> hoặc kéo thả file `.bin` vào đây
+                            </div>
+                            <div id="file-name-display" class="text-[11px] text-slate-500 font-mono truncate max-w-full">Chưa có file nào được chọn</div>
+                            <input type="file" id="file-input" accept=".bin" onchange="handleFileSelect(event)" class="hidden">
+                        </div>
+                    </div>
+
+                    <!-- Thông tin file đã chọn -->
+                    <div id="file-meta-box" class="hidden bg-slate-900/80 rounded-xl p-3 text-xs font-mono text-slate-300 space-y-1 border border-slate-700/50">
+                        <div>Tên file: <span id="meta-name" class="text-amber-400">--</span></div>
+                        <div>Kích thước: <span id="meta-size" class="text-slate-200">--</span> bytes</div>
+                    </div>
+
+                    <!-- Thanh tiến trình nạp -->
+                    <div class="space-y-1.5">
+                        <div class="flex justify-between text-xs">
+                            <span id="flash-status-label" class="text-slate-400 font-medium">Trạng thái: Chờ nạp</span>
+                            <span id="flash-percent" class="text-amber-400 font-mono">0%</span>
+                        </div>
+                        <div class="w-full bg-slate-900 rounded-full h-2.5 overflow-hidden border border-slate-700">
+                            <div id="flash-progress-bar" class="bg-amber-500 h-2.5 rounded-full transition-all duration-150" style="width: 0%"></div>
+                        </div>
+                    </div>
+
+                    <!-- Nút điều khiển Nạp và Hủy -->
+                    <div class="grid grid-cols-2 gap-3 pt-1">
+                        <button id="btn-flash" onclick="startFlashing()" disabled class="bg-amber-600 hover:bg-amber-500 text-white font-medium py-2.5 px-4 rounded-xl transition duration-200 flex items-center justify-center space-x-2 shadow-lg shadow-amber-600/30 disabled:opacity-50 disabled:cursor-not-allowed text-sm">
+                            <i class="fa-solid fa-microchip"></i>
+                            <span>Nạp dữ liệu</span>
+                        </button>
+                        <button id="btn-abort-flash" onclick="abortFlashing()" disabled class="bg-slate-700 hover:bg-rose-600 text-slate-300 hover:text-white font-medium py-2.5 px-4 rounded-xl transition duration-200 flex items-center justify-center space-x-2 disabled:opacity-50 disabled:cursor-not-allowed text-sm">
+                            <i class="fa-solid fa-stop"></i>
+                            <span>Hủy nạp</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
         </div>
 
-        <!-- Cột Terminal & Gửi dữ liệu (Bên phải / Dưới) -->
+        <!-- Cột Terminal & Gửi dữ liệu (Bên trái / Dưới) -->
         <div class="lg:col-span-2 flex flex-col bg-slate-800 rounded-2xl border border-slate-700 shadow-xl overflow-hidden">
             
             <!-- Terminal Header -->
@@ -215,6 +277,12 @@
         let txBytes = 0;
         let rxBytes = 0;
 
+        // Biến lưu trữ dữ liệu file .bin đang chuẩn bị nạp
+        let selectedBinData = null;
+        let selectedBinName = "";
+        let isFlashing = false;
+        let abortFlashFlag = false;
+
         // Kiểm tra xem trình duyệt có hỗ trợ Web Serial API không
         window.addEventListener('DOMContentLoaded', () => {
             if (!("serial" in navigator)) {
@@ -271,6 +339,171 @@
             document.getElementById('rx-count').innerText = rxBytes;
         }
 
+        // Xử lý chọn file bin mẫu có sẵn
+        function loadPresetBin(presetKey) {
+            if (!presetKey) return;
+            
+            let simulatedBytes;
+            if (presetKey === 'blink') {
+                selectedBinName = "blink_test_esp8266.bin";
+                // Tạo dữ liệu byte giả lập firmware Blink LED (1024 bytes)
+                simulatedBytes = new Uint8Array(1024);
+                for(let i=0; i<1024; i++) simulatedBytes[i] = (i % 256);
+            } else if (presetKey === 'sensor') {
+                selectedBinName = "sensor_read_demo.bin";
+                simulatedBytes = new Uint8Array(2560);
+                for(let i=0; i<2560; i++) simulatedBytes[i] = ((i * 3) % 256);
+            } else if (presetKey === 'loopback') {
+                selectedBinName = "loopback_test.bin";
+                simulatedBytes = new Uint8Array(512);
+                for(let i=0; i<512; i++) simulatedBytes[i] = (0x55);
+            }
+
+            selectedBinData = simulatedBytes;
+            displayFileInfo(selectedBinName, simulatedBytes.length);
+        }
+
+        // Xử lý kéo thả và chọn file
+        function handleDragOver(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('drop-zone').classList.add('border-amber-500', 'bg-slate-900');
+        }
+
+        function handleDragLeave(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('drop-zone').classList.remove('border-amber-500', 'bg-slate-900');
+        }
+
+        function handleFileDrop(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            document.getElementById('drop-zone').classList.remove('border-amber-500', 'bg-slate-900');
+            
+            if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                processFile(e.dataTransfer.files[0]);
+            }
+        }
+
+        function handleFileSelect(e) {
+            if (e.target.files && e.target.files.length > 0) {
+                processFile(e.target.files[0]);
+            }
+        }
+
+        function processFile(file) {
+            selectedBinName = file.name;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                selectedBinData = new Uint8Array(evt.target.result);
+                displayFileInfo(selectedBinName, selectedBinData.length);
+                // Reset dropdown mẫu
+                document.getElementById('preset-bin').value = "";
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function displayFileInfo(name, size) {
+            document.getElementById('file-name-display').innerText = name;
+            document.getElementById('meta-name').innerText = name;
+            document.getElementById('meta-size').innerText = size.toLocaleString();
+            document.getElementById('file-meta-box').classList.remove('hidden');
+
+            // Nếu đã kết nối cổng, cho phép nhấn nút nạp
+            if (port) {
+                document.getElementById('btn-flash').disabled = false;
+            }
+            document.getElementById('flash-status-label').innerText = "Trạng thái: Sẵn sàng nạp";
+            document.getElementById('flash-progress-bar').style.width = "0%";
+            document.getElementById('flash-percent').innerText = "0%";
+        }
+
+        // Tiến trình bắt đầu nạp dữ liệu qua Serial (CH340)
+        async function startFlashing() {
+            if (!port || !port.writable) {
+                showModal("Lỗi", "Chưa kết nối cổng Serial CH340.");
+                return;
+            }
+            if (!selectedBinData || selectedBinData.length === 0) {
+                showModal("Lỗi", "Chưa chọn file firmware (.bin) hợp lệ.");
+                return;
+            }
+
+            isFlashing = true;
+            abortFlashFlag = false;
+
+            document.getElementById('btn-flash').disabled = true;
+            document.getElementById('preset-bin').disabled = true;
+            document.getElementById('file-input').disabled = true;
+            document.getElementById('btn-abort-flash').disabled = false;
+
+            appendTerminal(`[Hệ thống] Bắt đầu nạp file "${selectedBinName}" (${selectedBinData.length} bytes) qua CH340...`, 'system');
+
+            const chunkSize = 128; // Gói truyền từng block
+            const totalBytes = selectedBinData.length;
+            let sentBytes = 0;
+
+            try {
+                const writer = port.writable.getWriter();
+
+                for (let i = 0; i < totalBytes; i += chunkSize) {
+                    if (abortFlashFlag) {
+                        appendTerminal(`[Hệ thống] Quá trình nạp đã bị người dùng hủy.`, 'system');
+                        document.getElementById('flash-status-label').innerText = "Trạng thái: Đã hủy";
+                        writer.releaseLock();
+                        isFlashing = false;
+                        resetFlashControls();
+                        return;
+                    }
+
+                    const chunk = selectedBinData.slice(i, i + chunkSize);
+                    await writer.write(chunk);
+                    sentBytes += chunk.length;
+
+                    txBytes += chunk.length;
+                    updateStats();
+
+                    const percent = Math.round((sentBytes / totalBytes) * 100);
+                    document.getElementById('flash-progress-bar').style.width = percent + "%";
+                    document.getElementById('flash-percent').innerText = percent + "%";
+                    document.getElementById('flash-status-label').innerText = `Đang nạp: ${sentBytes}/${totalBytes} bytes`;
+
+                    // Độ trễ nhỏ mô phỏng gói tin phần cứng ổn định
+                    await new Promise(r => setTimeout(r, 15));
+                }
+
+                writer.releaseLock();
+                appendTerminal(`[Hệ thống] Nạp thành công file "${selectedBinName}" (${totalBytes} bytes)!`, 'system');
+                document.getElementById('flash-status-label').innerText = "Trạng thái: Nạp thành công!";
+                showModal("Hoàn tất", `Đã truyền thành công ${totalBytes} bytes firmware xuống thiết bị qua CH340.`);
+
+            } catch (error) {
+                console.error("Lỗi khi nạp:", error);
+                appendTerminal(`[Lỗi Nạp] ${error.message}`, 'error');
+                document.getElementById('flash-status-label').innerText = "Trạng thái: Lỗi truyền tải";
+                showModal("Lỗi Nạp Dữ Liệu", error.message);
+            } finally {
+                isFlashing = false;
+                resetFlashControls();
+            }
+        }
+
+        function abortFlashing() {
+            if (isFlashing) {
+                abortFlashFlag = true;
+            }
+        }
+
+        function resetFlashControls() {
+            if (port) {
+                document.getElementById('btn-flash').disabled = false;
+            }
+            document.getElementById('preset-bin').disabled = false;
+            document.getElementById('file-input').disabled = false;
+            document.getElementById('btn-abort-flash').disabled = true;
+        }
+
         // Bắt đầu quy trình kết nối cổng Serial / USB
         async function connectSerial() {
             if (!("serial" in navigator)) {
@@ -322,6 +555,10 @@
                 document.getElementById('btn-disconnect').disabled = false;
                 document.getElementById('input-command').disabled = false;
                 document.getElementById('btn-send').disabled = false;
+
+                if (selectedBinData && selectedBinData.length > 0) {
+                    document.getElementById('btn-flash').disabled = false;
+                }
 
                 appendTerminal(`[Hệ thống] Đã mở cổng thành công với tốc độ ${baudRate} baud.`, 'system');
 
@@ -388,7 +625,6 @@
             let dataToSend = new Uint8Array();
 
             if (isHexSend) {
-                // Xử lý chuỗi hex (VD: "41 42 43" hoặc "0x41, 0x42")
                 try {
                     const cleanHex = inputVal.replace(/0x/g, '').replace(/[\s,]+/g, ' ').trim();
                     const hexArray = cleanHex.split(' ').map(h => parseInt(h, 16));
@@ -401,7 +637,6 @@
                     return;
                 }
             } else {
-                // Thêm line ending nếu có
                 const lineEnding = document.getElementById('line-ending').value;
                 if (lineEnding === 'lf') inputVal += '\n';
                 else if (lineEnding === 'cr') inputVal += '\r';
@@ -460,6 +695,7 @@
             document.getElementById('btn-disconnect').disabled = true;
             document.getElementById('input-command').disabled = true;
             document.getElementById('btn-send').disabled = true;
+            document.getElementById('btn-flash').disabled = true;
 
             document.getElementById('info-vid').innerText = '--';
             document.getElementById('info-pid').innerText = '--';
