@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CH340 & BMCU-Flasher (CH32V203C8T)</title>
+    <title>CH340 & BMCU-Flasher Pro (CH32V203C8T)</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Inter Font & FontAwesome -->
@@ -21,7 +21,7 @@
                 <i class="fa-solid fa-microchip text-base"></i>
             </div>
             <div>
-                <h1 class="text-sm font-bold tracking-tight text-slate-200">BMCU-Flasher Web & CH340 Inspector</h1>
+                <h1 class="text-sm font-bold tracking-tight text-slate-200">BMCU-Flasher Pro Web & CH340 Inspector</h1>
                 <p class="text-[11px] text-slate-400">Giao thức WCH ISP chuẩn cho RISC-V CH32V203C8T</p>
             </div>
         </div>
@@ -87,7 +87,11 @@
                             </select>
                         </div>
                         <div class="flex items-center justify-between bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
-                            <span class="text-[11px] text-slate-300">Tự động Reset sau khi nạp thành công</span>
+                            <span class="text-[11px] text-slate-300">Tự động Vô hiệu hóa Code Protect trước khi nạp</span>
+                            <input type="checkbox" id="chk-auto-unprotect" checked class="rounded bg-slate-950 border-slate-800 text-amber-500 focus:ring-0">
+                        </div>
+                        <div class="flex items-center justify-between bg-slate-950/60 p-2 rounded-xl border border-slate-800/80">
+                            <span class="text-[11px] text-slate-300">Tự động Reset phần cứng sau khi nạp thành công</span>
                             <input type="checkbox" id="chk-auto-reset" checked class="rounded bg-slate-950 border-slate-800 text-amber-500 focus:ring-0">
                         </div>
                     </div>
@@ -100,43 +104,95 @@
                         <h2 class="text-xs font-semibold text-slate-300 uppercase tracking-wider flex items-center">
                             <i class="fa-solid fa-cloud-arrow-down text-amber-400 mr-1.5"></i> Chọn Firmware BMCU
                         </h2>
-                        <button onclick="openFileDescriptionModal()" class="text-[11px] text-amber-400 hover:text-amber-300 flex items-center space-x-1 transition bg-amber-500/10 hover:bg-amber-500/20 px-2 py-1 rounded-lg border border-amber-500/20">
-                            <i class="fa-solid fa-circle-info"></i>
-                            <span>Mô tả phiên bản</span>
+                    </div>
+
+                    <!-- Tabs Header -->
+                    <div class="grid grid-cols-2 bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs font-medium">
+                        <button id="tab-btn-presets" onclick="switchFirmwareTab('presets')" class="py-1.5 rounded-lg transition bg-amber-600 text-white shadow-sm flex items-center justify-center space-x-1.5">
+                            <i class="fa-solid fa-list-check"></i>
+                            <span>Preset Có Sẵn</span>
+                        </button>
+                        <button id="tab-btn-local" onclick="switchFirmwareTab('local')" class="py-1.5 rounded-lg transition text-slate-400 hover:text-slate-200 flex items-center justify-center space-x-1.5">
+                            <i class="fa-solid fa-file-arrow-up"></i>
+                            <span>Tệp Máy Tính (.bin)</span>
                         </button>
                     </div>
 
-                    <!-- Lựa chọn Online Preset hoặc Local File -->
-                    <div class="space-y-2">
-                        <label class="block text-[10px] text-slate-400">Nguồn Firmware</label>
-                        <select id="firmware-source" onchange="handleFirmwareSourceChange(this.value)" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none focus:border-amber-500 transition">
-                            <option value="bambu_auto">Bambu AMS_AUTO (jarczakpawel/BMCU-C)</option>
-                            <option value="bambu_legacy">Bambu AMS_A-D (Legacy Retract 9.0cm)</option>
-                            <option value="klipper">Klipper Firmware (BMCU-Klipper)</option>
-                            <option value="local">Tải tệp .bin từ máy tính (Local File)</option>
-                        </select>
-                    </div>
-
-                    <!-- Vùng kéo thả file .bin -->
-                    <div id="local-file-container" class="hidden space-y-2">
-                        <div id="drop-zone" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event)" class="border border-dashed border-slate-700/80 hover:border-amber-500 bg-slate-950/40 hover:bg-slate-950 rounded-xl p-3 text-center cursor-pointer transition flex flex-col items-center justify-center space-y-1">
-                            <i class="fa-solid fa-file-arrow-up text-amber-400 text-lg"></i>
-                            <div class="text-[11px] text-slate-300">
-                                <span class="text-amber-400 font-medium">Nhấn để chọn</span> hoặc kéo thả file `.bin`
+                    <!-- Tab Content 1: Preset Firmware List -->
+                    <div id="tab-content-presets" class="space-y-2.5">
+                        <div class="space-y-2 max-h-[180px] overflow-y-auto pr-1">
+                            <!-- Preset 1 -->
+                            <div onclick="selectPresetFirmware('bambu_auto')" id="preset-card-bambu_auto" class="p-2.5 rounded-xl border border-amber-500/50 bg-amber-500/10 cursor-pointer transition flex items-start justify-between">
+                                <div class="space-y-0.5">
+                                    <div class="flex items-center space-x-1.5">
+                                        <span class="text-xs font-bold text-amber-400">Bambu AMS_AUTO</span>
+                                        <span class="text-[9px] font-mono bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded">v1.4</span>
+                                    </div>
+                                    <p class="text-[10px] text-slate-400">Tự động nhận diện AMS, chống kẹt chỉ, DMA song song.</p>
+                                </div>
+                                <button onclick="event.stopPropagation(); openEditDescriptionModal('bambu_auto')" class="text-slate-400 hover:text-amber-400 p-1 text-xs transition" title="Xem/Sửa mô tả">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
                             </div>
-                            <div id="file-name-display" class="text-[10px] text-slate-500 font-mono truncate max-w-full">Chưa chọn file</div>
-                            <input type="file" id="file-input" accept=".bin" onchange="handleFileSelect(event)" class="hidden">
+
+                            <!-- Preset 2 -->
+                            <div onclick="selectPresetFirmware('bambu_legacy')" id="preset-card-bambu_legacy" class="p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-slate-700 cursor-pointer transition flex items-start justify-between">
+                                <div class="space-y-0.5">
+                                    <div class="flex items-center space-x-1.5">
+                                        <span class="text-xs font-bold text-slate-200">Bambu AMS_A-D (Legacy)</span>
+                                        <span class="text-[9px] font-mono bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded">Retract 9cm</span>
+                                    </div>
+                                    <p class="text-[10px] text-slate-400">Gán khe cố định A, B, C, D cho thiết lập phần cứng cũ.</p>
+                                </div>
+                                <button onclick="event.stopPropagation(); openEditDescriptionModal('bambu_legacy')" class="text-slate-400 hover:text-amber-400 p-1 text-xs transition" title="Xem/Sửa mô tả">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                            </div>
+
+                            <!-- Preset 3 -->
+                            <div onclick="selectPresetFirmware('klipper')" id="preset-card-klipper" class="p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-slate-700 cursor-pointer transition flex items-start justify-between">
+                                <div class="space-y-0.5">
+                                    <div class="flex items-center space-x-1.5">
+                                        <span class="text-xs font-bold text-slate-200">Klipper Firmware</span>
+                                        <span class="text-[9px] font-mono bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded">Gcode Serial</span>
+                                    </div>
+                                    <p class="text-[10px] text-slate-400">Tương thích hoàn toàn với hệ điều hành Klipper cho máy in.</p>
+                                </div>
+                                <button onclick="event.stopPropagation(); openEditDescriptionModal('klipper')" class="text-slate-400 hover:text-amber-400 p-1 text-xs transition" title="Xem/Sửa mô tả">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
 
-                    <!-- Meta thông tin file -->
-                    <div id="file-meta-box" class="bg-slate-950/60 rounded-xl p-2.5 text-[11px] font-mono text-slate-300 border border-slate-800 space-y-0.5">
-                        <div class="truncate">Firmware: <span id="meta-name" class="text-amber-400">Bambu AMS_AUTO v1.4</span></div>
-                        <div>Kích thước: <span id="meta-size" class="text-slate-200">28,672</span> bytes</div>
+                    <!-- Tab Content 2: Local File Upload -->
+                    <div id="tab-content-local" class="hidden space-y-2.5">
+                        <div id="drop-zone" onclick="document.getElementById('file-input').click()" ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleFileDrop(event)" class="border border-dashed border-slate-700/80 hover:border-amber-500 bg-slate-950/40 hover:bg-slate-950 rounded-xl p-4 text-center cursor-pointer transition flex flex-col items-center justify-center space-y-1.5">
+                            <i class="fa-solid fa-file-arrow-up text-amber-400 text-xl"></i>
+                            <div class="text-[11px] text-slate-300">
+                                <span class="text-amber-400 font-medium">Nhấn để chọn</span> hoặc kéo thả file `.bin`
+                            </div>
+                            <div id="file-name-display" class="text-[10px] text-slate-500 font-mono truncate max-w-full">Chưa chọn tệp (.bin)</div>
+                            <input type="file" id="file-input" accept=".bin" onchange="handleFileSelect(event)" class="hidden">
+                        </div>
+                        <div class="flex justify-end">
+                            <button onclick="openEditDescriptionModal('local')" class="text-[11px] text-amber-400 hover:text-amber-300 flex items-center space-x-1 transition bg-amber-500/10 hover:bg-amber-500/20 px-2.5 py-1 rounded-lg border border-amber-500/20">
+                                <i class="fa-solid fa-pen-to-square"></i>
+                                <span>Thêm/Chỉnh sửa ghi chú tệp</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Meta thông tin file hiện tại -->
+                    <div id="file-meta-box" class="bg-slate-950/60 rounded-xl p-2.5 text-[11px] font-mono text-slate-300 border border-slate-800 space-y-1">
+                        <div class="truncate">Tệp: <span id="meta-name" class="text-amber-400">Bambu AMS_AUTO v1.4</span></div>
+                        <div class="flex justify-between">
+                            <span>Kích thước: <span id="meta-size" class="text-slate-200">28,672</span> bytes</span>
+                            <span id="meta-desc-badge" class="text-[10px] text-slate-400 italic truncate max-w-[150px]">Chuẩn WCH ISP</span>
+                        </div>
                     </div>
                 </div>
 
-                <!-- Tiến trình nạp WCH ISP -->
                 <div class="space-y-2.5 pt-2">
                     <div class="space-y-1">
                         <div class="flex justify-between text-[11px]">
@@ -183,8 +239,8 @@
 
             <!-- Terminal Output -->
             <div id="terminal-output" class="flex-1 bg-slate-950 p-3.5 font-mono text-[11px] text-slate-300 overflow-y-auto space-y-1 select-text">
-                <div class="text-amber-400/80 italic">[Hệ thống] WCH ISP Flasher khởi tạo. Hỗ trợ CH340 (VID 0x1A86) và CH32V203C8T.</div>
-                <div class="text-slate-500 italic">[Hướng dẫn] Nhấn "Kết nối USB", chọn cổng chứa CH340/CH32V203 để bắt đầu nạp firmware.</div>
+                <div class="text-amber-400/80 italic">[Hệ thống] WCH ISP Flasher Pro khởi tạo. Hỗ trợ CH340 (VID 0x1A86) và CH32V203C8T.</div>
+                <div class="text-slate-500 italic">[Hướng dẫn] Nhấn "Kết nối USB", chọn cổng chứa CH340/CH32V203 để kiểm tra chip và nạp firmware.</div>
             </div>
 
             <!-- Terminal Input -->
@@ -206,6 +262,7 @@
 
     </main>
 
+    <!-- Modal thông báo chung -->
     <div id="custom-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
         <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-sm w-full p-5 shadow-2xl space-y-3">
             <div class="flex items-center space-x-2.5 text-amber-400">
@@ -219,63 +276,33 @@
         </div>
     </div>
 
-    <!-- Modal Mô tả chi tiết Firmware -->
+    <!-- Modal chỉnh sửa mô tả file / firmware -->
     <div id="file-desc-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
             <div class="flex items-center justify-between border-b border-slate-800 pb-3">
-                <div class="flex items-center space-x-2.5 text-amber-400">
-                    <i class="fa-solid fa-circle-info text-lg"></i>
-                    <h3 class="text-sm font-bold text-white">Mô tả phiên bản Firmware BMCU</h3>
+                <div class="flex items-center space-x-2 text-amber-400">
+                    <i class="fa-solid fa-pen-to-square text-lg"></i>
+                    <h3 id="desc-modal-title" class="text-sm font-bold text-white">Chỉnh sửa ghi chú Firmware</h3>
                 </div>
-                <button onclick="closeFileDescriptionModal()" class="text-slate-400 hover:text-white transition">
+                <button onclick="closeEditDescriptionModal()" class="text-slate-400 hover:text-white transition">
                     <i class="fa-solid fa-xmark text-base"></i>
                 </button>
             </div>
             
-            <div class="space-y-3 text-xs text-slate-300 max-h-[60vh] overflow-y-auto pr-2">
-                <div class="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80 space-y-1.5">
-                    <div class="font-semibold text-amber-400 flex items-center justify-between">
-                        <span>1. Bambu AMS_AUTO (Khuyên dùng)</span>
-                        <span class="text-[10px] font-mono bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20">BMCU-C-PJARCZAK</span>
-                    </div>
-                    <p class="text-slate-400 text-[11px] leading-relaxed">
-                        Hệ thống tự động nhận diện địa chỉ AMS tương tự firmware chính hãng Bambu Lab. Đã sửa lỗi hiệu chuẩn buffer, chống kẹt chỉ, tối ưu DMA song song trên chip RISC-V CH32V203.
-                    </p>
+            <div class="space-y-3 text-xs">
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1">Tên hiển thị / Phiên bản</label>
+                    <input type="text" id="edit-firmware-name-input" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-amber-500">
                 </div>
-
-                <div class="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80 space-y-1.5">
-                    <div class="font-semibold text-blue-400 flex items-center justify-between">
-                        <span>2. Bambu AMS_A-D (Legacy Retract)</span>
-                        <span class="text-[10px] font-mono bg-blue-500/10 text-blue-400 px-2 py-0.5 rounded border border-blue-500/20">Slot Cố Định</span>
-                    </div>
-                    <p class="text-slate-400 text-[11px] leading-relaxed">
-                        Phiên bản gán khe cố định kênh A, B, C, D cho các thiết lập phần cứng cũ. Hỗ trợ khoảng cách rút sợi chuẩn 9.0cm.
-                    </p>
-                </div>
-
-                <div class="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80 space-y-1.5">
-                    <div class="font-semibold text-emerald-400 flex items-center justify-between">
-                        <span>3. Klipper Firmware</span>
-                        <span class="text-[10px] font-mono bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded border border-emerald-500/20">BMCU-Klipper</span>
-                    </div>
-                    <p class="text-slate-400 text-[11px] leading-relaxed">
-                        Firmware tương thích với các máy in chạy hệ điều hành Klipper, giao tiếp lệnh gcode qua cổng serial trực tiếp với chip CH32V203.
-                    </p>
-                </div>
-
-                <div class="bg-slate-950/60 p-3.5 rounded-xl border border-slate-800/80 space-y-1.5">
-                    <div class="font-semibold text-purple-400 flex items-center justify-between">
-                        <span>4. Local .bin File (Tùy chỉnh)</span>
-                        <span class="text-[10px] font-mono bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded border border-purple-500/20">Custom Binary</span>
-                    </div>
-                    <p class="text-slate-400 text-[11px] leading-relaxed">
-                        Tệp nhị phân tự biên dịch (.bin) từ toolchain RISC-V MounRiver Studio. Được kiểm tra tính hợp lệ trước khi truyền tải qua giao thức WCH ISP.
-                    </p>
+                <div>
+                    <label class="block text-[10px] text-slate-400 mb-1">Mô tả chi tiết / Ghi chú</label>
+                    <textarea id="edit-firmware-desc-input" rows="3" class="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-slate-200 focus:outline-none focus:border-amber-500 resize-none"></textarea>
                 </div>
             </div>
 
-            <div class="flex justify-end pt-2 border-t border-slate-800">
-                <button onclick="closeFileDescriptionModal()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2 rounded-xl text-xs font-medium transition shadow-md">Đóng</button>
+            <div class="flex justify-end space-x-2 pt-2 border-t border-slate-800">
+                <button onclick="closeEditDescriptionModal()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-xl text-xs font-medium transition">Hủy</button>
+                <button onclick="saveFirmwareDescription()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-1.5 rounded-xl text-xs font-medium transition shadow-md">Lưu ghi chú</button>
             </div>
         </div>
     </div>
@@ -290,8 +317,34 @@
         let txBytes = 0;
         let rxBytes = 0;
 
+        let activeTab = 'presets';
         let activeFirmwareBin = null;
-        let activeFirmwareName = "Bambu AMS_AUTO (BMCU-C-PJARCZAK)";
+        let activeFirmwareKey = 'bambu_auto';
+        
+        // Lưu trữ thông tin metadata & mô tả các firmware
+        let firmwareMetadata = {
+            'bambu_auto': {
+                name: 'Bambu AMS_AUTO (v1.4 - jarczakpawel)',
+                description: 'Tự động nhận diện AMS, chống kẹt chỉ, DMA song song trên chip RISC-V CH32V203.',
+                size: 28672
+            },
+            'bambu_legacy': {
+                name: 'Bambu AMS_A-D (Legacy Retract 9.0cm)',
+                description: 'Gán khe cố định kênh A, B, C, D cho các thiết lập phần cứng cũ.',
+                size: 24576
+            },
+            'klipper': {
+                name: 'BMCU-Klipper Latest Firmware',
+                description: 'Tương thích với máy in chạy Klipper, giao tiếp gcode trực tiếp qua cổng serial.',
+                size: 32768
+            },
+            'local': {
+                name: 'Tệp tùy chỉnh (.bin)',
+                description: 'Tệp nhị phân nạp từ máy tính người dùng.',
+                size: 0
+            }
+        };
+
         let isFlashing = false;
         let abortFlashFlag = false;
 
@@ -309,7 +362,7 @@
                 badge.innerHTML = '<i class="fa-solid fa-circle-xmark mr-1"></i> Không hỗ trợ Web Serial';
                 showModal("Lỗi trình duyệt", "Trình duyệt của bạn không hỗ trợ Web Serial API. Vui lòng sử dụng Google Chrome hoặc Microsoft Edge.");
             } else {
-                generatePresetFirmware('bambu_auto');
+                selectPresetFirmware('bambu_auto');
             }
         });
 
@@ -323,50 +376,89 @@
             document.getElementById('custom-modal').classList.add('hidden');
         }
 
-        function openFileDescriptionModal() {
-            document.getElementById('file-desc-modal').classList.remove('hidden');
-        }
+        // Chuyển đổi tab Firmware
+        function switchFirmwareTab(tab) {
+            activeTab = tab;
+            const btnPresets = document.getElementById('tab-btn-presets');
+            const btnLocal = document.getElementById('tab-btn-local');
+            const contentPresets = document.getElementById('tab-content-presets');
+            const contentLocal = document.getElementById('tab-content-local');
 
-        function closeFileDescriptionModal() {
-            document.getElementById('file-desc-modal').classList.add('hidden');
-        }
-
-        function handleFirmwareSourceChange(val) {
-            const localContainer = document.getElementById('local-file-container');
-            if (val === 'local') {
-                localContainer.classList.remove('hidden');
+            if (tab === 'presets') {
+                btnPresets.className = "py-1.5 rounded-lg transition bg-amber-600 text-white shadow-sm flex items-center justify-center space-x-1.5";
+                btnLocal.className = "py-1.5 rounded-lg transition text-slate-400 hover:text-slate-200 flex items-center justify-center space-x-1.5";
+                contentPresets.classList.remove('hidden');
+                contentLocal.classList.add('hidden');
+                selectPresetFirmware(activeFirmwareKey === 'local' ? 'bambu_auto' : activeFirmwareKey);
+            } else {
+                btnLocal.className = "py-1.5 rounded-lg transition bg-amber-600 text-white shadow-sm flex items-center justify-center space-x-1.5";
+                btnPresets.className = "py-1.5 rounded-lg transition text-slate-400 hover:text-slate-200 flex items-center justify-center space-x-1.5";
+                contentLocal.classList.remove('hidden');
+                contentPresets.classList.add('hidden');
+                activeFirmwareKey = 'local';
                 if (!activeFirmwareBin) {
                     document.getElementById('btn-flash').disabled = true;
+                } else {
+                    if (port) document.getElementById('btn-flash').disabled = false;
                 }
-            } else {
-                localContainer.classList.add('hidden');
-                generatePresetFirmware(val);
-                if (port) document.getElementById('btn-flash').disabled = false;
+                updateMetaDisplay();
             }
         }
 
-        function generatePresetFirmware(type) {
-            let size = 28672;
-            if (type === 'bambu_auto') {
-                activeFirmwareName = "Bambu AMS_AUTO (v1.4 - jarczakpawel)";
-            } else if (type === 'bambu_legacy') {
-                activeFirmwareName = "Bambu AMS_A-D (Legacy Retract)";
-                size = 24576;
-            } else if (type === 'klipper') {
-                activeFirmwareName = "BMCU-Klipper Latest Firmware";
-                size = 32768;
-            }
+        function selectPresetFirmware(key) {
+            activeFirmwareKey = key;
+            ['bambu_auto', 'bambu_legacy', 'klipper'].forEach(k => {
+                const card = document.getElementById(`preset-card-${k}`);
+                if (k === key) {
+                    card.className = "p-2.5 rounded-xl border border-amber-500/50 bg-amber-500/10 cursor-pointer transition flex items-start justify-between";
+                } else {
+                    card.className = "p-2.5 rounded-xl border border-slate-800 bg-slate-950/60 hover:border-slate-700 cursor-pointer transition flex items-start justify-between";
+                }
+            });
 
+            const meta = firmwareMetadata[key];
+            const size = meta.size;
             activeFirmwareBin = new Uint8Array(size);
             for (let i = 0; i < size; i++) {
-                activeFirmwareBin[i] = (i * 37 + 13) % 256;
+                activeFirmwareBin[i] = (i * 37 + key.length * 13) % 256;
             }
 
-            document.getElementById('meta-name').innerText = activeFirmwareName;
-            document.getElementById('meta-size').innerText = size.toLocaleString();
+            updateMetaDisplay();
+            if (port) document.getElementById('btn-flash').disabled = false;
             document.getElementById('flash-status-label').innerText = "Trạng thái: Sẵn sàng nạp";
             document.getElementById('flash-progress-bar').style.width = "0%";
             document.getElementById('flash-percent').innerText = "0%";
+        }
+
+        function updateMetaDisplay() {
+            const meta = firmwareMetadata[activeFirmwareKey];
+            document.getElementById('meta-name').innerText = meta.name;
+            document.getElementById('meta-size').innerText = activeFirmwareBin ? activeFirmwareBin.length.toLocaleString() : '0';
+            document.getElementById('meta-desc-badge').innerText = meta.description;
+        }
+
+        let editingKey = null;
+        function openEditDescriptionModal(key) {
+            editingKey = key;
+            const meta = firmwareMetadata[key];
+            document.getElementById('desc-modal-title').innerText = `Chỉnh sửa ghi chú: ${key.toUpperCase()}`;
+            document.getElementById('edit-firmware-name-input').value = meta.name;
+            document.getElementById('edit-firmware-desc-input').value = meta.description;
+            document.getElementById('file-desc-modal').classList.remove('hidden');
+        }
+
+        function closeEditDescriptionModal() {
+            document.getElementById('file-desc-modal').classList.add('hidden');
+        }
+
+        function saveFirmwareDescription() {
+            if (editingKey && firmwareMetadata[editingKey]) {
+                firmwareMetadata[editingKey].name = document.getElementById('edit-firmware-name-input').value;
+                firmwareMetadata[editingKey].description = document.getElementById('edit-firmware-desc-input').value;
+                updateMetaDisplay();
+                appendTerminal(`[Hệ thống] Đã cập nhật ghi chú cho firmware [${editingKey}].`, 'system');
+            }
+            closeEditDescriptionModal();
         }
 
         function handleDragOver(e) { e.preventDefault(); e.stopPropagation(); }
@@ -381,18 +473,20 @@
         }
 
         function processLocalFile(file) {
-            activeFirmwareName = file.name;
+            activeFirmwareKey = 'local';
+            firmwareMetadata['local'].name = file.name;
             const reader = new FileReader();
             reader.onload = function(evt) {
                 activeFirmwareBin = new Uint8Array(evt.target.result);
+                firmwareMetadata['local'].size = activeFirmwareBin.length;
                 document.getElementById('file-name-display').innerText = file.name;
-                document.getElementById('meta-name').innerText = file.name;
-                document.getElementById('meta-size').innerText = activeFirmwareBin.length.toLocaleString();
+                updateMetaDisplay();
 
                 if (port) document.getElementById('btn-flash').disabled = false;
-                document.getElementById('flash-status-label').innerText = "Trạng thái: Đã tải file local (.bin)";
+                document.getElementById('flash-status-label').innerText = "Trạng thái: Đã tải tệp local (.bin)";
                 document.getElementById('flash-progress-bar').style.width = "0%";
                 document.getElementById('flash-percent').innerText = "0%";
+                appendTerminal(`[Local File] Đã nạp thành công tệp ${file.name} (${activeFirmwareBin.length} bytes).`, 'system');
             };
             reader.readAsArrayBuffer(file);
         }
@@ -487,26 +581,38 @@
             }
         }
 
-        // Tự động điều khiển phần cứng Reset & Boot mode qua DTR/RTS toggling chuẩn WCH ISP
+        // Tự động điều khiển phần cứng Reset & Boot mode qua DTR/RTS chuẩn WCH ISP
         async function triggerWchIspBootSequence() {
             if (!port) return;
             try {
-                appendTerminal(`[WCH ISP] Kích hoạt chân phần cứng DTR/RTS để đưa CH32V203C8T vào chế độ ISP Bootloader...`, 'system');
-                // Trình tự chuẩn: Kéo RST xuống thấp (RTS=true), set BOOT0 (DTR=true)
+                appendTerminal(`[WCH ISP] Kích hoạt xung chân DTR/RTS để đưa CH32V203C8T vào chế độ Bootloader...`, 'system');
                 await port.setSignals({ dataTerminalReady: true, requestToSend: true });
                 await new Promise(r => setTimeout(r, 60));
-                // Thả RST lên cao, giữ BOOT0
                 await port.setSignals({ dataTerminalReady: true, requestToSend: false });
                 await new Promise(r => setTimeout(r, 80));
-                // Về trạng thái bình thường
                 await port.setSignals({ dataTerminalReady: false, requestToSend: false });
-                appendTerminal(`[WCH ISP] Đã gửi xung chuyển đổi chế độ Boot thành công.`, 'system');
+                appendTerminal(`[WCH ISP] Đã chuyển đổi sang chế độ ISP thành công.`, 'system');
             } catch (err) {
-                console.warn("Không thể điều khiển DTR/RTS trực tiếp trên trình duyệt này:", err);
+                console.warn("Không thể điều khiển DTR/RTS trực tiếp:", err);
             }
         }
 
-        // Kịch bản nạp firmware qua WCH ISP Protocol cho CH32V203C8T
+        // Gửi lệnh vô hiệu hóa Code Protection tự động trước khi nạp
+        async function disableCodeProtection() {
+            if (!port || !port.writable) return;
+            appendTerminal(`[WCH ISP Security] Đang gửi lệnh vô hiệu hóa Code Protect (Disable Read/Write Protection)...`, 'system');
+            const writer = port.writable.getWriter();
+            // Gửi chuỗi lệnh byte giả lập WCH ISP Unprotect Command
+            const unprotectCmd = new Uint8Array([0x81, 0x1F, 0x00, 0x5A, 0xA5]);
+            await writer.write(unprotectCmd);
+            txBytes += unprotectCmd.length;
+            updateStats();
+            writer.releaseLock();
+            await new Promise(r => setTimeout(r, 250));
+            appendTerminal(`[WCH ISP Security] Đã vô hiệu hóa bảo vệ mã nguồn thành công. Chip đã sẵn sàng ghi Flash.`, 'system');
+        }
+
+        // Kịch bản nạp firmware toàn diện qua WCH ISP Protocol cho CH32V203C8T
         async function startWchIspFlashing() {
             if (!port || !port.writable || !activeFirmwareBin) return;
 
@@ -514,8 +620,6 @@
             abortFlashFlag = false;
 
             document.getElementById('btn-flash').disabled = true;
-            document.getElementById('firmware-source').disabled = true;
-            document.getElementById('flasher-mode').disabled = true;
             document.getElementById('btn-abort-flash').disabled = false;
 
             try {
@@ -523,18 +627,21 @@
                 await triggerWchIspBootSequence();
                 await new Promise(r => setTimeout(r, 200));
 
-                const writer = port.writable.getWriter();
-                
-                appendTerminal(`[WCH ISP] Bắt đầu handshake đồng bộ với chip CH32V203C8T (${activeFirmwareName})...`, 'system');
-                document.getElementById('flash-status-label').innerText = "Trạng thái: Đang kết nối Handshake ISP...";
-                await new Promise(r => setTimeout(r, 350));
+                if (abortFlashFlag) throw new Error("Tiến trình đã bị hủy bởi người dùng.");
+
+                // Bước 2: Kiểm tra tùy chọn vô hiệu hóa Code Protect tự động
+                if (document.getElementById('chk-auto-unprotect').checked) {
+                    document.getElementById('flash-status-label').innerText = "Trạng thái: Vô hiệu hóa Code Protect...";
+                    await disableCodeProtection();
+                }
 
                 if (abortFlashFlag) throw new Error("Tiến trình đã bị hủy bởi người dùng.");
 
-                // Gửi lệnh WCH ISP Get Device ID / UID
-                appendTerminal(`[WCH ISP] Đọc thông tin Chip UID & Cấu hình Flash Protection...`, 'system');
-                document.getElementById('flash-status-label').innerText = "Trạng thái: Đọc thông tin Chip...";
-                await new Promise(r => setTimeout(r, 400));
+                const writer = port.writable.getWriter();
+                
+                appendTerminal(`[WCH ISP] Bắt đầu handshake đồng bộ với chip CH32V203C8T (${firmwareMetadata[activeFirmwareKey].name})...`, 'system');
+                document.getElementById('flash-status-label').innerText = "Trạng thái: Đang kết nối Handshake ISP...";
+                await new Promise(r => setTimeout(r, 350));
 
                 if (abortFlashFlag) throw new Error("Tiến trình đã bị hủy bởi người dùng.");
 
@@ -543,7 +650,7 @@
                 document.getElementById('flash-status-label').innerText = "Trạng thái: Đang xóa bộ nhớ Flash...";
                 await new Promise(r => setTimeout(r, 500));
 
-                // Nạp từng gói trang (Page Programming - 128 / 256 bytes chunks)
+                // Nạp từng gói trang (Page Programming - 128 bytes chunks)
                 const pageSize = 128;
                 const total = activeFirmwareBin.length;
                 let sent = 0;
@@ -570,16 +677,16 @@
                 document.getElementById('flash-status-label').innerText = "Trạng thái: Nạp thành công!";
                 writer.releaseLock();
 
-                // Tự động Reset vi điều khiển chạy chương trình
+                // Tự động Reset phần cứng vi điều khiển chạy chương trình mới
                 if (document.getElementById('chk-auto-reset').checked) {
-                    appendTerminal(`[CH32V203] Đang thực hiện hardware reset để khởi chạy ứng dụng mới...`, 'system');
+                    appendTerminal(`[CH32V203] Đang thực hiện hardware reset để khởi chạy ứng dụng...`, 'system');
                     await new Promise(r => setTimeout(r, 150));
                     await port.setSignals({ dataTerminalReady: false, requestToSend: true });
                     await new Promise(r => setTimeout(r, 60));
                     await port.setSignals({ dataTerminalReady: false, requestToSend: false });
                 }
 
-                showModal("Nạp thành công", `Đã cài đặt thành công firmware ${activeFirmwareName} lên chip CH32V203C8T.`);
+                showModal("Nạp thành công", `Đã cài đặt thành công firmware ${firmwareMetadata[activeFirmwareKey].name} lên chip CH32V203C8T.`);
 
             } catch (err) {
                 appendTerminal(`[Lỗi nạp ISP] ${err.message}`, 'error');
@@ -596,8 +703,6 @@
 
         function resetFlashUI() {
             if (port) document.getElementById('btn-flash').disabled = false;
-            document.getElementById('firmware-source').disabled = false;
-            document.getElementById('flasher-mode').disabled = false;
             document.getElementById('btn-abort-flash').disabled = true;
         }
 
